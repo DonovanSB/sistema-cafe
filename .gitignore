@@ -1,0 +1,9 @@
+/Circuitos
+/login
+/Teclado
+/componentes.xlsx
+.vscode/
+*.pyc
+__pycache__/
+*.xls
+*.xlsx
