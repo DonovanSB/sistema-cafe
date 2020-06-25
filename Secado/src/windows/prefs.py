@@ -1,6 +1,6 @@
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Estacion Cafe Secado"
+route = os.path.dirname(os.getcwd()) + "/Secado"
 sys.path.append(route + "/src/widgets")
 sys.path.append(route + "/src/providers")
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QDialog

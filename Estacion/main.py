@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Estacion Cafe"
+route = os.path.dirname(os.getcwd()) + "/Estacion"
 sys.path.append(route + "/src/widgets")
 sys.path.append(route + "/src/providers")
 import time

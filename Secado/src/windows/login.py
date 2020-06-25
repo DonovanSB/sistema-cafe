@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Estacion Cafe Secado"
+route = os.path.dirname(os.getcwd()) + "/Secado"
 sys.path.append(route + "/src/windows")
 from PyQt5.QtWidgets import QDialog, QGraphicsDropShadowEffect, QApplication, QPushButton, QWidget, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
 from PyQt5.QtGui import QPixmap, QColor

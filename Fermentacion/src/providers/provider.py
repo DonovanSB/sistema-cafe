@@ -9,7 +9,7 @@ import os
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
 
-route = os.path.dirname(os.getcwd()) + "/Estacion Cafe Fermentacion"
+route = os.path.dirname(os.getcwd()) + "/Fermentacion"
 rutaData = route + "/datos"
 rutaPrefsUser =route + "/src/providers"
 statusFile = True
