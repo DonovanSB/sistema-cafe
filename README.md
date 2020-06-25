@@ -26,6 +26,16 @@ sudo pip install schedule
 ```
 sudo pip install openpyxl==2.6.4
 ```
+# Configurar usuario y contraseña en las variables de entorno
+con
+```
+sudo nano ~/.bashrc
+```
+y agregando las siguientes lineas al final
+```
+USER_ENV="your user"
+PASS_ENV="your password"
+```
 
 ## Inicio del programa
 Ejecutar main.py
