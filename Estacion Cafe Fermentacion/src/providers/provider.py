@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import random
+from openpyxl import Workbook, load_workbook
 from datetime import datetime
 import matplotlib.dates as dates
 import xlwt
@@ -11,6 +12,7 @@ import json
 route = os.path.dirname(os.getcwd()) + "/Estacion Cafe Fermentacion"
 rutaData = route + "/datos"
 rutaPrefsUser =route + "/src/providers"
+statusFile = True
 
 class Data:
     def __init__(self,textTempR,textHumR,textTemp1,textTemp2,textTemp3,textBrix,textPh):
@@ -23,105 +25,131 @@ class Data:
         self.textBrix  = textBrix
         self.textPh    = textPh
 
-        self.tempRData = []
-        self.humRData  = []
-        self.temp1Data = []
-        self.temp2Data = []
-        self.temp3Data = []
-        self.brixData  = []
-        self.phData    = []
-        self.timeData  = []
         self.numData   = 1000
-
-        self.brix = 50
-        self.ph = 7
 
         self.prefs = LocalStorage()
         self.prefs.beginPrefs(route=rutaPrefsUser)
-        prefs = self.prefs.readPrefs()
-        if prefs:
-            self.prefs.beginXlsx(name="datos",route=prefs["routeData"])
-        else:
-            print("provider Data: No se encontró ruta en prefs")
+        self.routeData = self.prefs.readPrefs()['routeData']
+       
+        # Inicializaciones para almacenamiento de datos
+        self.wb = WBook(self.routeData).workbook
+        self.initExcel(self.routeData)
+        self.initDataService()
 
         self.signals = Signals()
         self.signals.signalUpdateStorageRoute.connect(self.updateStorgeRoute)
         self.signals.signalUpdateInputValue.connect(self.updateInputValue)
-    
+
+    def initDataService(self):
+        self.envService = DataService( [self.textTempR, self.textHumR], self.envExcel, self.numData, ["°C", "%"], 2)
+        self.temp1Service = DataService( self.textTemp1, self.temp1Excel, self.numData, "°C")
+        self.temp2Service = DataService( self.textTemp2, self.temp2Excel, self.numData, "°C")
+        self.temp3Service = DataService( self.textTemp3, self.temp3Excel, self.numData, "°C")
+        self.brixService = DataService( self.textBrix, self.brixExcel, self.numData, "Bx")
+        self.phService = DataService( self.textPh, self.temp3Excel, self.numData, "")
+
+    def initExcel(self, route):
+        self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route, initial = True)
+        self.temp1Excel = Excel(wb = self.wb, titleSheet='Temperatura 1', head = ['Tiempo', 'Temperatura'], route = route)
+        self.temp2Excel = Excel(wb = self.wb, titleSheet='Temperatura 2', head = ['Tiempo', 'Temperatura'], route = route)
+        self.temp3Excel = Excel(wb = self.wb, titleSheet='Temperatura 3', head = ['Tiempo', 'Temperatura'], route = route)
+        self.brixExcel = Excel(wb = self.wb, titleSheet='Brix', head = ['Tiempo', 'Brix'], route = route)
+        self.phExcel = Excel(wb = self.wb, titleSheet='PH', head = ['Tiempo', 'PH'], route = route)
+
     def updateInputValue(self,name,value):
+        currentTime = datetime.now()
         if name == "Brix":
-            self.brix = value
-            self.textBrix.setText(str(self.brix) + " Bx")
+            self.brixService.update(value, currentTime)
         if name == "PH":
-            self.ph = value
-            self.textPh.setText(str(self.ph))
+            self.phService.update(value, currentTime)
 
     def updateStorgeRoute(self,route):
-        self.prefs.beginXlsx(name="datos",route=route)
+        self.routeData = route
+        self.wb = WBook(route).workbook
+        self.initExcel(route)
+        self.initDataService()
 
-    def readData(self):
+    def getData(self, index):
+        datos= [self.envService.data[0], self.envService.data[1], self.temp1Service.data, self.temp2Service.data, self.temp3Service.data, self.brixService.data, self.phService.data]     
+        return datos[index]
+    
+    def getTime(self, index):
+        time = [self.envService.time, self.envService.time, self.temp1Service.time, self.temp2Service.time, self.temp3Service.time, self.brixService.time, self.phService.time]
+        return time[index]
 
-        self.temperatureR = random.randint(18, 25)
-        self.humidityR = random.randint(50, 60)
-        self.temperature1 = random.randint(18, 25)
-        self.temperature2 = random.randint(18, 25)
-        self.temperature3 = random.randint(18, 25)
-        self.time = datetime.now()
+    #  ************** Lectura, visualización y almacenamiento ************
+    def env(self):
+        # Leer datos
+        temperatureR = random.randint(18, 25)
+        humidityR = random.randint(50, 60)
+        currentTime = datetime.now()
+        self.envService.update([temperatureR, humidityR], currentTime)
 
-        # ---Almacenar Datos---
-        self.tempRData.append(self.temperatureR)
-        self.humRData.append(self.humidityR)
-        self.temp1Data.append(self.temperature1)
-        self.temp2Data.append(self.temperature2)
-        self.temp3Data.append(self.temperature3)
-        self.brixData.append(self.brix)
-        self.phData.append(self.ph)
-        self.timeData.append(self.time)
+    def temp1(self):
+        # Leer Datos
+        temperature = random.randint(18, 25)
+        currentTime = datetime.now()
+        self.temp1Service.update(temperature, currentTime)
 
-        
-        if len(self.tempRData) > self.numData:
-            self.tempRData.pop(0)
-        
-        if len(self.humRData) > self.numData:
-            self.humRData.pop(0)
-        
-        if len(self.temp1Data) > self.numData:
-            self.temp1Data.pop(0)
-        
-        if len(self.temp2Data) > self.numData:
-            self.temp2Data.pop(0)
+    def temp2(self):
+        # Leer Datos
+        temperature = random.randint(18, 25)
+        currentTime = datetime.now()
+        self.temp2Service.update(temperature, currentTime)
 
-        if len(self.temp3Data) > self.numData:
-            self.temp3Data.pop(0)
-        
-        if len(self.brixData) > self.numData:
-            self.brixData.pop(0)
-
-        if len(self.phData) > self.numData:
-            self.phData.pop(0)
-            
-        if len(self.timeData) > self.numData:
-            self.timeData.pop(0)
-        
-        self.datos = [self.tempRData,self.humRData,self.temp1Data,self.temp2Data,self.temp3Data,self.brixData,self.phData]
-        
-        self.updateData()
-
-    def updateData(self):
-        
-        self.textTempR.setText( str(self.temperatureR) + " °C")
-        self.textHumR.setText( str(self.humidityR) + " %")
-        self.textTemp1.setText( str(self.temperature1) + " °C")
-        self.textTemp2.setText( str(self.temperature2) + " °C")
-        self.textTemp3.setText( str(self.temperature3) + " °C")
-
-        data = [self.time,self.temperatureR,self.humidityR,self.temperature1,self.temperature2,self.temperature3,self.brix,self.ph]
-        style = ["time","number","number","number","number","number","number","number"]
+    def temp3(self):
+        # Leer Datos
+        temperature = random.randint(18, 25)
+        currentTime = datetime.now()
+        self.temp3Service.update(temperature, currentTime)
+    
+    def save(self):
         try:
-            self.prefs.saveXlsx(data,style)
+            self.wb.save(self.routeData + '/datos.xlsx')
         except:
-            print("provider updateData: Ingrese un ruta correcta para almacenar los datos")
+            print("provider save: Ingrese un ruta correcta para almacenar los datos")
+        
+        statusFile = True
             
+class DataService:
+    def __init__(self, text, excel, numData, units,numVarSensor = 1):
+        self.text = text
+        self.excel = excel
+        self.numData = numData
+        self.numVarSensor = numVarSensor
+        self.units = units
+        self.signals = Signals()
+
+        if self.numVarSensor > 1:
+            self.data = [[] for i in range(self.numVarSensor)]
+        else:
+            self.data = []
+        self.time = []
+    
+    def update(self, data, time):
+        self.time.append(time)
+        if len(self.time) > self.numData:
+            self.time.pop(0)
+
+        if self.numVarSensor > 1:
+            for i in range(self.numVarSensor):
+                self.data[i].append(data[i])
+                if len(self.data[i]) > self.numData:
+                    self.data[i].pop(0)
+                self.text[i].setText( str(data[i]) +" "+ self.units[i])
+            datos = [time]
+            datos.extend(data)
+            self.excel.addRow(datos)
+        else:
+            self.data.append(data)
+            if len(self.data) > self.numData:
+                self.data.pop(0)
+            self.text.setText( str(data) +" "+ self.units)
+            self.excel.addRow([time, data])
+
+        # Actualizar grafica  
+        self.signals.signalUpdateGraph.emit()
+        
 
 class Plotter:
     def __init__(self,Figure,ax):
@@ -131,16 +159,55 @@ class Plotter:
         self.limits = [[0,80], [0,100], [0,80], [0,80], [0,80], [0,85], [0,14]]
 
     def plot(self,datax,datay,title,index):
+        if len(datax) <= 0 and len(datay) <= 0:
+            datax = [datetime.now()]
+            datay = [0]
         self.ax.cla()
-        self.ax.plot(datax,datay, 'b-')
+        if len(datax) == len(datay):
+            self.ax.plot(datax,datay, 'b-')
         self.ax.xaxis.set_major_formatter(self.formatTime)
         self.ax.grid()
         self.ax.set_ylim(self.limits[index][0],self.limits[index][1])
         self.ax.set_title(title,fontsize = "18", fontweight='bold')
         self.ax.set_xlabel('Hora',fontsize = "15")
         self.ax.set_ylabel('x(t)',fontsize = "15")
-        self.Fig.figure.subplots_adjust(top = 0.8,bottom=0.27, left=0.15)
+        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.1, right = 0.95)
         self.Fig.draw()
+
+class WBook:
+    def __init__(self, route):
+        fileExists = os.path.isfile(route + '/datos.xlsx')
+        if fileExists:
+            try:
+                self.workbook = load_workbook(filename= route + '/datos.xlsx')
+            except:
+                print('Archivo dañado')
+                statusFile = False
+                self.workbook = Workbook()
+        else:
+            self.workbook = Workbook()
+
+class Excel:
+    def __init__(self, wb, titleSheet, head, route, initial = False):
+        fileExists = os.path.isfile(route + '/datos.xlsx')
+        self.route = route + '/'
+        self.workbook = wb
+
+        if fileExists and statusFile:
+            self.sheet = self.workbook.get_sheet_by_name(titleSheet)
+        else:
+            if initial:
+                self.sheet = self.workbook.active
+                self.sheet.title = titleSheet
+            else:
+                self.sheet = self.workbook.create_sheet(title=titleSheet)  
+            self.sheet.append(head)
+        # print(len(tuple(self.sheet.rows)))
+        # print(self.sheet.cell(row=3, column=1).value)
+
+    def addRow(self, data):
+        self.sheet.append(data)
+     
 
 class LocalStorage():
     def __init__(self):
@@ -148,33 +215,6 @@ class LocalStorage():
     
     def beginPrefs(self,route):
         self.routePrefs = route + "/"
-    
-    def beginXlsx(self,name,route):
-        self.nameXlsx = name
-        self.routeXlsx = route + "/"
-        self.wb = xlwt.Workbook()
-        self.ws = self.wb.add_sheet('Sensores')
-        self.styleTime = xlwt.easyxf('',num_format_str='D/M/YY h:mm:s')
-        self.styleTitles = xlwt.easyxf('font: name Times New Roman, bold on')
-        self.ws.write(0, 0, 'Fecha', self.styleTitles)
-        self.ws.write(0, 1, 'Temperatura Ambiente', self.styleTitles)
-        self.ws.write(0, 2, 'Humedad Ambiente', self.styleTitles)
-        self.ws.write(0, 3, 'Temperatura 1', self.styleTitles)
-        self.ws.write(0, 4, 'Temperatura 2', self.styleTitles)
-        self.ws.write(0, 5, 'Temperatura 3', self.styleTitles)
-        self.ws.write(0, 6, 'Brix', self.styleTitles)
-        self.ws.write(0, 7, 'PH', self.styleTitles)
-        self.pos = 1
-
-    def saveXlsx(self,data,style):
-        column = len(data)
-        for i in range(column):
-            if style[i] == "time":
-                self.ws.write(self.pos, i, data[i],self.styleTime)
-            if style[i] == "number":
-                self.ws.write(self.pos, i, data[i])
-            self.wb.save(self.routeXlsx+self.nameXlsx + ".xls")
-        self.pos += 1
     
     def readPrefs(self):
         try:
@@ -208,3 +248,4 @@ class Signals(QObject):
     signalServerUpdate = pyqtSignal(bool)
     signalUpdateStorageRoute = pyqtSignal(str)
     signalUpdateInputValue = pyqtSignal(str,float)
+    signalUpdateGraph = pyqtSignal()

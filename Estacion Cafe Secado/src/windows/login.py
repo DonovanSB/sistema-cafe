@@ -7,10 +7,8 @@ sys.path.append(route + "/src/windows")
 from PyQt5.QtWidgets import QDialog, QGraphicsDropShadowEffect, QApplication, QPushButton, QWidget, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
 from PyQt5.QtGui import QPixmap, QColor
 from PyQt5.QtCore import Qt
-from dotenv import load_dotenv
 import prefs
 
-load_dotenv()
 rutaAssets = route + "/assets/"
 
 class Shadow(QGraphicsDropShadowEffect):

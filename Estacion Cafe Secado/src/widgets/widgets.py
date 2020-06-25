@@ -144,7 +144,7 @@ class MenuVisualizacion(QFrame):
         #---Lista--
         self.listaVariables = QComboBox()
         self.listaVariables.setStyleSheet("background:#5472d3;color:black; font:18px; padding: 5px 0px 5px 10px; selection-background-color: #0d47a1; margin: 0px 0px 0px 10px; border-radius:10px")
-        self.sensores = ["Humedad grano","Temperatura A","Humedad A","Temperatura 1","Humedad 1","Temperatura 2", "Humedad 2", "Temperatura 3", "Humedad 3"]
+        self.sensores = ["Temperatura A","Humedad A","Temperatura 1","Humedad 1","Temperatura 2", "Humedad 2", "Temperatura 3", "Humedad 3", "Humedad grano"]
         self.listaVariables.addItems(self.sensores)
 
         box = QLabel("")

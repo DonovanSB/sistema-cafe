@@ -44,7 +44,7 @@ class Estacion(QMainWindow):
 
         #--- Inicio de Instacias de providers
         self.plot = provider.Plotter(self.graph.FIG,self.graph.ax1)
-        self.data = provider.Data(self.humGrain.text,self.environment.tempValue,self.environment.humValue,self.zone1.tempValue,self.zone1.humValue,self.zone2.tempValue,self.zone2.humValue,self.zone3.tempValue,self.zone3.humValue)
+        self.data = provider.Data(self.environment.tempValue,self.environment.humValue,self.zone1.tempValue,self.zone1.humValue,self.zone2.tempValue,self.zone2.humValue,self.zone3.tempValue,self.zone3.humValue,self.humGrain.text)
         self.prefs = provider.LocalStorage()
         self.prefs.beginPrefs(route=rutaProviders)
 
@@ -63,7 +63,7 @@ class Estacion(QMainWindow):
 
     def closeEvent(self, event):
         
-        self.data.wb.save(self.prefs.readPrefs()['routeData']+ '/datos' + '.xlsx')
+        self.data.save()
 
         self.reply = QMessageBox.question(None,'',"¿Realmente desea cerrar la aplicación?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if self.reply == QMessageBox.Yes:
@@ -79,11 +79,11 @@ class Estacion(QMainWindow):
     
     def createWidgets(self):
         # Datos Actuales
-        self.humGrain = widgets.RoundedContainer("Humedad Grano","humedadpurple.svg","50 %")
         self.environment = widgets.EnvironmentWidget("Ambiente","18 °C", "50 %")
         self.zone1 = widgets.EnvironmentWidget("Zona 1","15 °C", "50 %")
         self.zone2 = widgets.EnvironmentWidget("Zona 2","17 °C", "50 %")
         self.zone3 = widgets.EnvironmentWidget("Zona 3","17 °C", "50 %")
+        self.humGrain = widgets.RoundedContainer("Humedad Grano","humedadpurple.svg","50 %")
 
         # Menu de visuzalización
         self.menuVis = widgets.MenuVisualizacion()
@@ -98,11 +98,11 @@ class Estacion(QMainWindow):
 
         widgetGrid = QWidget()      
         gridLayout = QGridLayout(widgetGrid)
-        gridLayout.addWidget(self.humGrain,0,0)
-        gridLayout.addWidget(self.environment,0,1)
-        gridLayout.addWidget(self.zone1,0,2)
-        gridLayout.addWidget(self.zone2,0,3)
-        gridLayout.addWidget(self.zone3,0,4)
+        gridLayout.addWidget(self.environment,0,0)
+        gridLayout.addWidget(self.zone1,0,1)
+        gridLayout.addWidget(self.zone2,0,2)
+        gridLayout.addWidget(self.zone3,0,3)
+        gridLayout.addWidget(self.humGrain,0,4)
         gridLayout.addWidget(self.menuVis,1,0)
         gridLayout.addWidget(self.graph,1,1,1,4)
         gridLayout.addWidget(self.toolbarFig,2,0,1,5)
@@ -140,9 +140,10 @@ class Thread(QThread):
 
     def run(self):
         schedule.every(5).seconds.do(self.data.env)
-        schedule.every(5).seconds.do(self.data.env1)
-        schedule.every(5).seconds.do(self.data.env2)
-        schedule.every(5).seconds.do(self.data.env3)
+        schedule.every(10).seconds.do(self.data.env1)
+        schedule.every(15).seconds.do(self.data.env2)
+        schedule.every(20).seconds.do(self.data.env3)
+        schedule.every(5).seconds.do(self.data.save)
 
         while self.threadactive:
             schedule.run_pending()

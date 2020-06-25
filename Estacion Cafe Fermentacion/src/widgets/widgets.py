@@ -89,7 +89,6 @@ class RoundedContainerInput(QFrame):
         buttomIngresar.setIcon(QIcon(rutaAssets + "dialpad.svg"))
         buttomIngresar.setIconSize(QSize(30,30))
         buttomIngresar.setStyleSheet(self.styleBottoms)
-        buttomIngresar.setGraphicsEffect(shadow)
         buttomIngresar.clicked.connect(self.loadValue)
 
         grid = QGridLayout(self)

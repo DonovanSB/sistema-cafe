@@ -10,211 +10,172 @@ import json
 
 route = os.path.dirname(os.getcwd()) + "/Estacion Cafe Secado"
 rutaPrefsUser = route + "/src/providers"
+statusFile = True
 
 class Data:
-    def __init__(self,textHumGrain, textTempEnv, textHumEnv,textTemp1,textHum1,textTemp2,textHum2,textTemp3,textHum3):
+    def __init__(self, textTempEnv, textHumEnv, textTemp1, textHum1, textTemp2, textHum2, textTemp3, textHum3, textHumGrain,):
         
         self.textTempEnv  = textTempEnv
         self.textHumEnv   = textHumEnv
-        self.textHumGrain = textHumGrain
         self.textTemp1    = textTemp1
         self.textHum1     = textHum1
         self.textTemp2    = textTemp2
         self.textHum2     = textHum2
         self.textTemp3    = textTemp3
         self.textHum3     = textHum3
-        
-        
-        self.humGrainData = []
-        self.tempEnvData  = []
-        self.humEnvData   = []
-        self.temp1Data    = []
-        self.hum1Data     = []
-        self.temp2Data    = []
-        self.hum2Data     = []
-        self.temp3Data    = []
-        self.hum3Data     = []
-
-        self.envTime      = []
-        self.env1Time     = []
-        self.env2Time     = []
-        self.env3Time     = []
-        self.humGrainTime = []
+        self.textHumGrain = textHumGrain
        
         self.numData      = 1000
-
-        self.humidityGrain = 50
+        self.corruptedFile = False
 
         self.prefs = LocalStorage()
         self.prefs.beginPrefs(route=rutaPrefsUser)
-        prefs = self.prefs.readPrefs()
+        self.routeData = self.prefs.readPrefs()['routeData']
 
         # Inicializaciones para almacenamiento de datos
-        self.wb = WBook(prefs['routeData']).workbook
-        self.initExcel(prefs['routeData'])
+        self.wb = WBook(self.routeData).workbook
+        self.initExcel(self.routeData)
+        self.initDataService()
 
         self.signals = Signals()
         self.signals.signalUpdateStorageRoute.connect(self.updateStorgeRoute)
         self.signals.signalUpdateInputValue.connect(self.updateInputValue)
     
+    def initDataService(self):
+        self.envService = DataService( [self.textTempEnv, self.textHumEnv], self.envExcel, self.numData, ["°C", "%"], 2)
+        self.env1Service = DataService( [self.textTemp1, self.textHum1], self.env1Excel, self.numData, ["°C", "%"], 2)
+        self.env2Service = DataService( [self.textTemp2, self.textHum2], self.env2Excel, self.numData, ["°C", "%"], 2)
+        self.env3Service = DataService( [self.textTemp3, self.textHum3], self.env3Excel, self.numData, ["°C", "%"], 2)
+        self.humGrainService = DataService( self.textHumGrain, self.humGrainExcel, self.numData, "%")
+
     def initExcel(self, route):
-        self.humGrainExcel = Excel(wb = self.wb, titleSheet='Humedad Grano', head = ['Tiempo', 'Humedad Grano'], route = route, initial = True)
-        self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
+        self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route, initial = True)
         self.env1Excel = Excel(wb = self.wb, titleSheet='Zona 1', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
         self.env2Excel = Excel(wb = self.wb, titleSheet='Zona 2', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
         self.env3Excel = Excel(wb = self.wb, titleSheet='Zona 3', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
+        self.humGrainExcel = Excel(wb = self.wb, titleSheet='Humedad Grano', head = ['Tiempo', 'Humedad Grano'], route = route)
 
     def updateInputValue(self,hum):
-        self.humidityGrain = hum
         currentTime = datetime.now()
-        self.humGrainData.append(self.humidityGrain)
-        self.humGrainTime.append(currentTime)
-        if len(self.humGrainData) > self.numData:
-            self.humGrainData.pop(0)
-        if len(self.humGrainTime) > self.numData:
-            self.humGrainTime.pop(0)
-
-        self.signals.signalUpdateGraph.emit()
-        self.textHumGrain.setText(str(self.humidityGrain) + " %")
-
-        self.humGrainExcel.save([currentTime, self.humidityGrain])
+        self.humGrainService.update(hum, currentTime)
 
     def updateStorgeRoute(self,route):
+        self.routeData = route
         self.wb = WBook(route).workbook
         self.initExcel(route)
+        self.initDataService()
 
     def getData(self, index):
-        self.datos= [self.humGrainData,self.tempEnvData,self.humEnvData,self.temp1Data,self.hum1Data,self.temp2Data,self.hum2Data,self.temp3Data,self.hum3Data]     
-        return self.datos[index]
+        datos= [self.envService.data[0],self.envService.data[1],self.env1Service.data[0],self.env1Service.data[1],self.env2Service.data[0],self.env2Service.data[1],self.env3Service.data[0],self.env3Service.data[1],self.humGrainService.data]     
+        return datos[index]
 
     def getTime(self, index):
-        self.time = [self.humGrainTime,self.envTime,self.envTime,self.env1Time,self.env1Time,self.env2Time,self.env2Time,self.env3Time,self.env3Time]
-        return self.time[index]
+        time = [self.envService.time, self.envService.time, self.env1Service.time, self.env1Service.time, self.env2Service.time, self.env2Service.time, self.env3Service.time, self.env3Service.time, self.humGrainService.time]
+        return time[index]
 
     def env(self):
-        self.temperatureEnv = random.randint(18, 25)
-        self.humidityEnv = random.randint(50, 60)
+        temperatureEnv = random.randint(18, 25)
+        humidityEnv = random.randint(50, 60)
         currentTime = datetime.now()
-
-        self.tempEnvData.append(self.temperatureEnv)
-        self.humEnvData.append(self.humidityEnv)
-        self.envTime.append(currentTime)
-
-        if len(self.tempEnvData) > self.numData:
-            self.tempEnvData.pop(0)
-        
-        if len(self.humEnvData) > self.numData:
-            self.humEnvData.pop(0)
-
-        if len(self.envTime) > self.numData:
-            self.envTime.pop(0)
-
-        self.signals.signalUpdateGraph.emit()
-        self.textTempEnv.setText( str(self.temperatureEnv) + " °C")
-        self.textHumEnv.setText( str(self.humidityEnv) + " %")
-
-        self.envExcel.save([currentTime, self.temperatureEnv, self.humidityEnv])
+        self.envService.update([temperatureEnv, humidityEnv], currentTime)
     
     def env1(self):
-        self.temperature1 = random.randint(18, 25)
-        self.humidity1 = random.randint(50, 60)
+        temperature1 = random.randint(18, 25)
+        humidity1 = random.randint(50, 60)
         currentTime = datetime.now()
+        self.env1Service.update([temperature1, humidity1], currentTime)
         
-        self.temp1Data.append(self.temperature1)    
-        self.hum1Data.append(self.humidity1)
-        self.env1Time.append(currentTime)
-
-        if len(self.temp1Data) > self.numData:
-            self.temp1Data.pop(0)
-        
-        if len(self.hum1Data) > self.numData:
-            self.hum1Data.pop(0)
-        
-        if len(self.env1Time) > self.numData:
-            self.env1Time.pop(0)
-
-        self.signals.signalUpdateGraph.emit()
-        self.textTemp1.setText( str(self.temperature1) + " °C")
-        self.textHum1.setText( str(self.humidity1) + " %")
-
-        self.env1Excel.save([currentTime, self.temperature1, self.humidity1])
-    
     def env2(self):
-        self.temperature2 = random.randint(18, 25)
-        self.humidity2 = random.randint(50, 60)
+        temperature2 = random.randint(18, 25)
+        humidity2 = random.randint(50, 60)
         currentTime = datetime.now()
-        
-        self.temp2Data.append(self.temperature2)    
-        self.hum2Data.append(self.humidity2)
-        self.env2Time.append(currentTime)
-        
-        if len(self.temp2Data) > self.numData:
-            self.temp2Data.pop(0)
-        
-        if len(self.hum2Data) > self.numData:
-            self.hum2Data.pop(0)
-        
-        if len(self.env2Time) > self.numData:
-            self.env2Time.pop(0)
-
-        self.signals.signalUpdateGraph.emit()
-        self.textTemp2.setText( str(self.temperature2) + " °C")
-        self.textHum2.setText( str(self.humidity2) + " %")
-
-        self.env2Excel.save([currentTime, self.temperature2, self.humidity2])
+        self.env2Service.update([temperature2, humidity2], currentTime)
 
     def env3(self):
-        self.temperature3 = random.randint(18, 25)
-        self.humidity3 = random.randint(50, 60)
+        temperature3 = random.randint(18, 25)
+        humidity3 = random.randint(50, 60)
         currentTime = datetime.now()
-        
-        self.temp3Data.append(self.temperature3)    
-        self.hum3Data.append(self.humidity3)
-        self.env3Time.append(currentTime)
-        
-        if len(self.temp3Data) > self.numData:
-            self.temp3Data.pop(0)
-        
-        if len(self.hum3Data) > self.numData:
-            self.hum3Data.pop(0)
-        
-        if len(self.env3Time) > self.numData:
-            self.env3Time.pop(0)
+        self.env3Service.update([temperature3, humidity3], currentTime)
+    
+    def save(self):
+        try:
+            self.wb.save(self.routeData + '/datos.xlsx')
+        except:
+            print("provider save: Ingrese un ruta correcta para almacenar los datos")
+        statusFile = True
 
+class DataService:
+    def __init__(self, text, excel, numData, units,numVarSensor = 1):
+        self.text = text
+        self.excel = excel
+        self.numData = numData
+        self.numVarSensor = numVarSensor
+        self.units = units
+        self.signals = Signals()
+
+        if self.numVarSensor > 1:
+            self.data = [[] for i in range(self.numVarSensor)]
+        else:
+            self.data = []
+        self.time = []
+    
+    def update(self, data, time):
+        self.time.append(time)
+        if len(self.time) > self.numData:
+            self.time.pop(0)
+
+        if self.numVarSensor > 1:
+            for i in range(self.numVarSensor):
+                self.data[i].append(data[i])
+                if len(self.data[i]) > self.numData:
+                    self.data[i].pop(0)
+                self.text[i].setText( str(data[i]) +" "+ self.units[i])
+            datos = [time]
+            datos.extend(data)
+            self.excel.addRow(datos)
+        else:
+            self.data.append(data)
+            if len(self.data) > self.numData:
+                self.data.pop(0)
+            self.text.setText( str(data) +" "+ self.units)
+            self.excel.addRow([time, data])
+
+        # Actualizar grafica  
         self.signals.signalUpdateGraph.emit()
-        self.textTemp3.setText( str(self.temperature3) + " °C")
-        self.textHum3.setText( str(self.humidity3) + " %")
-
-        self.env3Excel.save([currentTime, self.temperature3, self.humidity3])
-
 
 class Plotter:
     def __init__(self,Figure,ax):
         self.Fig = Figure
         self.ax = ax
         self.formatTime = dates.DateFormatter("%H:%M")
-        self.limits = [[0,100], [0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,80], [0,100]]
+        self.limits = [[0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,100]]
 
     def plot(self,datax,datay,title,index):
         if len(datax) <= 0 and len(datay) <= 0:
-            datax = datetime.now()
-            datay = 0
+            datax = [datetime.now()]
+            datay = [0]
         self.ax.cla()
-        self.ax.plot(datax,datay, 'b-')
+        if len(datax) == len(datay):
+            self.ax.plot(datax,datay, 'b-')
         self.ax.xaxis.set_major_formatter(self.formatTime)
         self.ax.grid()
         self.ax.set_ylim(self.limits[index][0],self.limits[index][1])
         self.ax.set_title(title,fontsize = "18", fontweight='bold')
         self.ax.set_xlabel('Hora',fontsize = "15")
         self.ax.set_ylabel('x(t)',fontsize = "15")
-        self.Fig.figure.subplots_adjust(top = 0.8,bottom=0.27, left=0.15)
+        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.1, right = 0.95)
         self.Fig.draw()
 
 class WBook:
     def __init__(self, route):
         fileExists = os.path.isfile(route + '/datos.xlsx')
         if fileExists:
-            self.workbook = load_workbook(filename= route + '/datos.xlsx')
+            try:
+                self.workbook = load_workbook(filename= route + '/datos.xlsx')
+            except:
+                print('Archivo dañado')
+                statusFile = False
+                self.workbook = Workbook()
         else:
             self.workbook = Workbook()
 
@@ -224,7 +185,7 @@ class Excel:
         self.route = route + '/'
         self.workbook = wb
 
-        if fileExists:
+        if fileExists and statusFile:
             self.sheet = self.workbook.get_sheet_by_name(titleSheet)
         else:
             if initial:
@@ -236,12 +197,8 @@ class Excel:
         # print(len(tuple(self.sheet.rows)))
         # print(self.sheet.cell(row=3, column=1).value)
 
-    def save(self, data):
+    def addRow(self, data):
         self.sheet.append(data)
-        try:
-            self.workbook.save(self.route+ 'datos' + '.xlsx')
-        except:
-            print("provider save: Ingrese un ruta correcta para almacenar los datos")
             
 class LocalStorage():
     def __init__(self):

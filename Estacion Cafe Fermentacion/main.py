@@ -6,7 +6,7 @@ route = os.path.dirname(os.getcwd()) + "/Estacion Cafe Fermentacion"
 sys.path.append(route + "/src/widgets")
 sys.path.append(route + "/src/providers")
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget, QWidget, QGridLayout, QAction, QDialog
+from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QDesktopWidget, QWidget, QGridLayout, QAction, QDialog
 from PyQt5.QtCore import QThread, QTimer,pyqtSignal, QObject
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 import widgets
@@ -34,14 +34,17 @@ class Estacion(QMainWindow):
         self.setStyleSheet("QWidget {background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #9e9e9e, stop:1 #707070)}")
         self.centerWindow()
         
+        # Signals
+        self.signals = provider.Signals()
+        self.signals.signalServerUpdate.connect(self.updateServer)
+        self.signals.signalUpdateGraph.connect(self.updateGraph)
+        
         #---Crear Widgets---
         self.createWidgets()
 
         #--- Inicio de Instacias de providers
         self.plot = provider.Plotter(self.graph.FIG,self.graph.ax1)
         self.data = provider.Data(self.environment.tempValue,self.environment.humValue,self.temperature1.text,self.temperature2.text,self.temperature3.text,self.refractometer.text,self.phWidget.text)
-        self.signals = provider.Signals()
-        self.signals.signalServerUpdate.connect(self.updateServer)
         self.prefs = provider.LocalStorage()
         self.prefs.beginPrefs(route=rutaProviders)
 
@@ -57,7 +60,18 @@ class Estacion(QMainWindow):
         #-- Mostrar Ventana---
         self.show()
         self.setFocus()
+    
+    def closeEvent(self, event):
+        
+        self.data.save()
 
+        self.reply = QMessageBox.question(None,'',"¿Realmente desea cerrar la aplicación?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if self.reply == QMessageBox.Yes:
+            self.thread.stop()
+            event.accept()
+        else:
+            event.ignore()
+    
     def centerWindow(self):
         S_Screen = QDesktopWidget().availableGeometry().center()
         S_Win = self.geometry()
@@ -74,6 +88,7 @@ class Estacion(QMainWindow):
 
         # Menu de visuzalización
         self.menuVis = widgets.MenuVisualizacion()
+        self.menuVis.listaVariables.currentIndexChanged.connect(self.signals.signalUpdateGraph.emit)
         # Grafica 
         self.graph = widgets.Graph()
         self.toolbarFig = NavigationToolbar(self.graph.FIG, self)
@@ -98,19 +113,16 @@ class Estacion(QMainWindow):
     def updateServer(self, update):
         self.updateServerPrefs = update
 
-    def task3(self):
-        # Leer datos
-        self.data.readData()
+    def updateGraph(self):
         # Graficar
         indexActual = self.menuVis.listaVariables.currentIndex()
         variableActual = self.menuVis.listaVariables.currentText()
-        self.plot.plot(self.data.timeData, self.data.datos[indexActual],variableActual, indexActual)
+        self.plot.plot(self.data.getTime(indexActual), self.data.getData(indexActual),variableActual, indexActual)
 
     def task2(self):
         
         if self.initTask:
-            self.thread = Thread(5,self.data)
-            self.thread.updateSignal.connect(self.task3)
+            self.thread = Thread(self.data)
             self.thread.start()
             self.initTask = False
 
@@ -120,28 +132,25 @@ class Estacion(QMainWindow):
             print(self.prefs.readPrefs()["routeData"])
             self.updateServerPrefs = False
             
-    def task3(self):
-        # Graficar
-        indexActual = self.menuVis.listaVariables.currentIndex()
-        variableActual = self.menuVis.listaVariables.currentText()
-        self.plot.plot(self.data.timeData, self.data.datos[indexActual],variableActual, indexActual)
-    
 class Thread(QThread):
-    updateSignal = pyqtSignal()
-    def __init__(self,time,data):
+    def __init__(self, data):
         super(Thread,self).__init__()
-        self.time = time
+        self.threadactive = True
         self.data = data
 
     def run(self):
-        schedule.every(self.time).seconds.do(self.task)
-        while True:
+        schedule.every(5).seconds.do(self.data.env)
+        schedule.every(10).seconds.do(self.data.temp1)
+        schedule.every(15).seconds.do(self.data.temp2)
+        schedule.every(20).seconds.do(self.data.temp3)
+        schedule.every(5).seconds.do(self.data.save)
+        
+        while self.threadactive:
             schedule.run_pending()
             time.sleep(0.1)
 
-    def task(self):
-        self.data.readData()
-        self.updateSignal.emit()
+    def stop(self):
+        self.threadactive = False
 
 if __name__ == '__main__':
     App = QApplication(sys.argv)
