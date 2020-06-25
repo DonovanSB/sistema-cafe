@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Estacion"
+parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
+route = os.path.abspath(parent)
 sys.path.append(route + "/src/providers")
 sys.path.append(route + "/src/windows")
 from PyQt5.QtWidgets import QFrame, QLineEdit, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout,QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
@@ -16,6 +17,7 @@ import prefs
 import login
 
 rutaAssets = route + "/assets/"
+
 class Shadow(QGraphicsDropShadowEffect):
     def __init__(self):
         super(Shadow,self).__init__()

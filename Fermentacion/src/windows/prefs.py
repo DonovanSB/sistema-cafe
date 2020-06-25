@@ -1,13 +1,14 @@
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Fermentacion"
-sys.path.append(route + "/src/widgets")
-sys.path.append(route + "/src/providers")
+parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
+route = os.path.abspath(parent)
+sys.path.append(route + "/widgets")
+sys.path.append(route + "/providers")
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QDialog
 import provider
 import widgets
 
-rutaPrefsUser =route + "/src/providers"
+rutaPrefsUser =route + "/providers"
 class Preferencias(QDialog):
     def __init__(self):
         super(Preferencias,self).__init__()

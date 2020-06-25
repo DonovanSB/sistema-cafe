@@ -8,9 +8,7 @@ import os
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
 
-route = os.path.dirname(os.getcwd()) + "/Estacion"
-rutaData =  route + "/datos"
-rutaPrefsUser = route + "/src/providers"
+rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
 class Data:
     def __init__(self,textTemp,textHum,textIrrad,textVel,textDir,textLluvia):

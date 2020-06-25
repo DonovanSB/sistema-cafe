@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Secado"
+parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
+route = os.path.abspath(parent)
 sys.path.append(route + "/src/windows")
 from PyQt5.QtWidgets import QDialog, QGraphicsDropShadowEffect, QApplication, QPushButton, QWidget, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
 from PyQt5.QtGui import QPixmap, QColor

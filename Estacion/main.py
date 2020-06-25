@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-route = os.path.dirname(os.getcwd()) + "/Estacion"
+route = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(route + "/src/widgets")
 sys.path.append(route + "/src/providers")
 import time
@@ -13,7 +13,6 @@ import widgets
 import provider
 import threading
 import schedule
-
 
 rutaProviders =route + "/src/providers"
 
