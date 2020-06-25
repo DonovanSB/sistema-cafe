@@ -29,7 +29,7 @@ sudo pip install openpyxl==2.6.4
 # Configurar usuario y contraseña en las variables de entorno
 con
 ```
-sudo nano ~/.bashrc
+sudo nano ~/.profile
 ```
 y agregando las siguientes lineas al final
 ```
