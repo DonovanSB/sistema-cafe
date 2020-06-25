@@ -3,104 +3,138 @@
 import random
 from datetime import datetime
 import matplotlib.dates as dates
-import xlwt
+from openpyxl import Workbook, load_workbook
 import os
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
+statusFile = True
 
 class Data:
-    def __init__(self,textTemp,textHum,textIrrad,textVel,textDir,textLluvia):
+    def __init__(self,textTemp,textHum,textIrrad,textSpeed,textDir,textRain):
         self.textTemp = textTemp
         self.textHum = textHum
         self.textIrrad = textIrrad
-        self.textVel = textVel
+        self.textSpeed = textSpeed
         self.textDir = textDir
-        self.textLluvia = textLluvia
+        self.textRain = textRain
 
-        self.tempData = []
-        self.humData = []
-        self.irradData = []
-        self.speedData = []
-        self.directionData = []
-        self.rainData = []
-        self.timeData = []
         self.numData = 1000
 
         self.prefs = LocalStorage()
         self.prefs.beginPrefs(route=rutaPrefsUser)
-        prefs = self.prefs.readPrefs()
-        if prefs:
-            self.prefs.beginXlsx(name="datos",route=prefs["routeData"])
-        else:
-            print("provider Data: No se encontró ruta en prefs")
+        self.routeData = os.path.abspath(self.prefs.readPrefs()['routeData'] + '/datos.xlsx')
+        
+        # Inicializaciones para almacenamiento de datos
+        self.wb = WBook(self.routeData).workbook
+        self.initExcel(self.routeData)
+        self.initDataService()
 
         self.signals = Signals()
         self.signals.signalUpdateStorageRoute.connect(self.updateStorgeRoute)
     
+    def initDataService(self):
+        self.envService = DataService( [self.textTemp, self.textHum], self.envExcel, self.numData, ["°C", "%"], 2)
+        self.irradService = DataService( self.textIrrad, self.irradExcel, self.numData, "W/m²")
+        self.speedService = DataService( self.textSpeed, self.speedExcel, self.numData, "km/h")
+        self.directionService = DataService( self.textDir, self.directionExcel, self.numData, "°")
+        self.rainService = DataService( self.textRain, self.rainExcel, self.numData, "cm/h")
+
+    def initExcel(self, route):
+        self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route, initial = True)
+        self.irradExcel = Excel(wb = self.wb, titleSheet='Irradiancia', head = ['Tiempo', 'Irradiancia'], route = route)
+        self.speedExcel = Excel(wb = self.wb, titleSheet='Velocidad V', head = ['Tiempo', 'Velocidad'], route = route)
+        self.directionExcel = Excel(wb = self.wb, titleSheet='Direccion V', head = ['Tiempo', 'Direccion'], route = route)
+        self.rainExcel = Excel(wb = self.wb, titleSheet='Lluvia', head = ['Tiempo', 'Lluvia'], route = route)
+
     def updateStorgeRoute(self,route):
-        self.prefs.beginXlsx(name="datos",route=route)
+        self.routeData = os.path.abspath(route + '/datos.xlsx')
+        self.wb = WBook(self.routeData).workbook
+        self.initExcel(self.routeData)
+        self.initDataService()
+    
+    def getData(self, index):
+        data = [self.envService.data[0], self.envService.data[1], self.irradService.data, self.speedService.data, self.directionService.data, self.rainService.data]
+        return data[index]
 
-    def readData(self):
+    def getTime(self, index):
+        time = [self.envService.time, self.envService.time, self.irradService.time, self.speedService.time, self.directionService.time, self.rainService.time]
+        return time[index]
 
-        self.temperature = random.randint(18, 25)
-        self.humidity = random.randint(50, 60)
-        self.irrad = random.randint(200, 300)
-        self.speed = random.randint(5, 10)
-        self.direction = random.randint(0, 360)
-        self.rain = random.randint(0, 5)
-        self.time = datetime.now()
+    def env(self):
+        # Leer datos
+        temperatureR = random.randint(18, 25)
+        humidityR = random.randint(50, 60)
+        currentTime = datetime.now()
+        self.envService.update([temperatureR, humidityR], currentTime)
+    
+    def irrad(self):
+        irradiance = random.randint(200, 300)
+        currentTime = datetime.now()
+        self.irradService.update(irradiance, currentTime)
 
-        # ---Almacenar Datos---
-        self.tempData.append(self.temperature)
-        self.humData.append(self.humidity)
-        self.irradData.append(self.irrad)
-        self.speedData.append(self.speed)
-        self.directionData.append(self.direction)
-        self.rainData.append(self.rain)
-        self.timeData.append(self.time)
+    def windSpeed(self):
+        speed = random.randint(5, 10)
+        currentTime = datetime.now()
+        self.speedService.update(speed, currentTime)
 
-        if len(self.tempData) > self.numData:
-            self.tempData.pop(0)
-        
-        if len(self.humData) > self.numData:
-            self.humData.pop(0)
-        
-        if len(self.irradData) > self.numData:
-            self.irradData.pop(0)
-        
-        if len(self.speedData) > self.numData:
-            self.speedData.pop(0)
-        
-        if len(self.directionData) > self.numData:
-            self.directionData.pop(0)
+    def windDirection(self):
+        direction = random.randint(0, 360)
+        currentTime = datetime.now()
+        self.directionService.update(direction, currentTime)
 
-        if len(self.rainData) > self.numData:
-            self.rainData.pop(0)
-            
-        if len(self.timeData) > self.numData:
-            self.timeData.pop(0)
+    def rain(self):
+        rain = random.randint(0, 5)
+        currentTime = datetime.now()
+        self.rainService.update(rain, currentTime)
 
-        self.datos = [self.tempData, self.humData, self.irradData, self.speedData, self.directionData, self.rainData]
-        
-        self.updateData()
-
-    def updateData(self):
-        self.textTemp.setText( str(self.temperature) + " °C")
-        self.textHum.setText( str(self.humidity) + " %")
-        self.textIrrad.setText( str(self.irrad) + " W/m²")
-        self.textVel.setText( str(self.speed) + " km/h")
-        self.textDir.setText( str(self.direction) + " °")
-        self.textLluvia.setText( str(self.rain) + " cm/h")
-        
-        data = [self.time,self.temperature,self.humidity,self.irrad,self.speed,self.direction,self.rain]
-        style = ["time","number","number","number","number","number","number"]
+    def save(self):
         try:
-            self.prefs.saveXlsx(data,style)
+            self.wb.save(self.routeData)
         except:
-            print("provider updateData: Ingrese un ruta correcta para almacenar los datos")
-            
+            print("provider save: Ingrese un ruta correcta para almacenar los datos")
+        
+        statusFile = True
+
+class DataService:
+    def __init__(self, text, excel, numData, units,numVarSensor = 1):
+        self.text = text
+        self.excel = excel
+        self.numData = numData
+        self.numVarSensor = numVarSensor
+        self.units = units
+        self.signals = Signals()
+
+        if self.numVarSensor > 1:
+            self.data = [[] for i in range(self.numVarSensor)]
+        else:
+            self.data = []
+        self.time = []
+    
+    def update(self, data, time):
+        self.time.append(time)
+        if len(self.time) > self.numData:
+            self.time.pop(0)
+
+        if self.numVarSensor > 1:
+            for i in range(self.numVarSensor):
+                self.data[i].append(data[i])
+                if len(self.data[i]) > self.numData:
+                    self.data[i].pop(0)
+                self.text[i].setText( str(data[i]) +" "+ self.units[i])
+            datos = [time]
+            datos.extend(data)
+            self.excel.addRow(datos)
+        else:
+            self.data.append(data)
+            if len(self.data) > self.numData:
+                self.data.pop(0)
+            self.text.setText( str(data) +" "+ self.units)
+            self.excel.addRow([time, data])
+
+        # Actualizar grafica  
+        self.signals.signalUpdateGraph.emit()
 
 class Plotter:
     def __init__(self,Figure,ax):
@@ -110,7 +144,12 @@ class Plotter:
         self.limits = [[0,80], [0,100], [0,1200], [0,100], [0,360], [0,50]]
 
     def plot(self,datax,datay,title,index):
+        if len(datax) <= 0 and len(datay) <= 0:
+            datax = [datetime.now()]
+            datay = [0]
         self.ax.cla()
+        if len(datax) == len(datay):
+            self.ax.plot(datax,datay, 'b-')
         self.ax.plot(datax,datay, 'b-')
         self.ax.xaxis.set_major_formatter(self.formatTime)
         self.ax.grid()
@@ -118,47 +157,54 @@ class Plotter:
         self.ax.set_title(title,fontsize = "18", fontweight='bold')
         self.ax.set_xlabel('Hora',fontsize = "15")
         self.ax.set_ylabel('x(t)',fontsize = "15")
-        self.Fig.figure.subplots_adjust(top = 0.8,bottom=0.27, left=0.15)
+        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.13, right = 0.95)
         self.Fig.draw()
+
+class WBook:
+    def __init__(self, route):
+        fileExists = os.path.isfile(route)
+        if fileExists:
+            try:
+                self.workbook = load_workbook(filename= route)
+            except:
+                print('Archivo dañado')
+                statusFile = False
+                self.workbook = Workbook()
+        else:
+            self.workbook = Workbook()
+
+class Excel:
+    def __init__(self, wb, titleSheet, head, route, initial = False):
+        fileExists = os.path.isfile(route)
+        self.workbook = wb
+
+        if fileExists and statusFile:
+            self.sheet = self.workbook.get_sheet_by_name(titleSheet)
+        else:
+            if initial:
+                self.sheet = self.workbook.active
+                self.sheet.title = titleSheet
+            else:
+                self.sheet = self.workbook.create_sheet(title=titleSheet)  
+            self.sheet.append(head)
+        # print(len(tuple(self.sheet.rows)))
+        # print(self.sheet.cell(row=3, column=1).value)
+
+    def addRow(self, data):
+        self.sheet.append(data)
 
 class LocalStorage():
     def __init__(self):
         self.optionsServer = []
     
     def beginPrefs(self,route):
-        self.routePrefs = route + "/"
-    
-    def beginXlsx(self,name,route):
-        self.nameXlsx = name
-        self.routeXlsx = route + "/"
-        self.wb = xlwt.Workbook()
-        self.ws = self.wb.add_sheet('Sensores')
-        self.styleTime = xlwt.easyxf('',num_format_str='D/M/YY h:mm:s')
-        self.styleTitles = xlwt.easyxf('font: name Times New Roman, bold on')
-        self.ws.write(0, 0, 'Fecha', self.styleTitles)
-        self.ws.write(0, 1, 'Temperatura', self.styleTitles)
-        self.ws.write(0, 2, 'Humedad', self.styleTitles)
-        self.ws.write(0, 3, 'Irradiancia', self.styleTitles)
-        self.ws.write(0, 4, 'Velocidad', self.styleTitles)
-        self.ws.write(0, 5, 'Direccion', self.styleTitles)
-        self.ws.write(0, 6, 'Lluvia', self.styleTitles)
-        self.pos = 1
+        self.routePrefs = os.path.abspath(route + "/prefs.json")
 
-    def saveXlsx(self,data,style):
-        column = len(data)
-        for i in range(column):
-            if style[i] == "time":
-                self.ws.write(self.pos, i, data[i],self.styleTime)
-            if style[i] == "number":
-                self.ws.write(self.pos, i, data[i])
-            self.wb.save(self.routeXlsx+self.nameXlsx + ".xls")
-        self.pos += 1
-    
     def readPrefs(self):
         try:
-            with open(self.routePrefs + 'prefs.json') as file:
+            with open(self.routePrefs) as file:
                 if file.read():
-                    file = open(self.routePrefs + 'prefs.json')
+                    file = open(self.routePrefs)
                     return json.load(file)
                 else:
                     print('No se encontraron las preferencias del usuario')
@@ -168,7 +214,7 @@ class LocalStorage():
             return False
 
     def updatePrefs(self,prefs):
-        with open(self.routePrefs + 'prefs.json', 'w') as file:
+        with open(self.routePrefs, 'w') as file:
             json.dump(prefs, file)
 
 
@@ -185,3 +231,4 @@ def singleton(cls):
 class Signals(QObject):
     signalServerUpdate = pyqtSignal(bool)
     signalUpdateStorageRoute = pyqtSignal(str)
+    signalUpdateGraph = pyqtSignal()

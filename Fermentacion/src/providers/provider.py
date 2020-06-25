@@ -27,7 +27,7 @@ class Data:
 
         self.prefs = LocalStorage()
         self.prefs.beginPrefs(route=rutaPrefsUser)
-        self.routeData = self.prefs.readPrefs()['routeData']
+        self.routeData = os.path.abspath(self.prefs.readPrefs()['routeData'] + '/datos.xlsx')
        
         # Inicializaciones para almacenamiento de datos
         self.wb = WBook(self.routeData).workbook
@@ -62,9 +62,9 @@ class Data:
             self.phService.update(value, currentTime)
 
     def updateStorgeRoute(self,route):
-        self.routeData = route
-        self.wb = WBook(route).workbook
-        self.initExcel(route)
+        self.routeData = os.path.abspath(route+ '/datos.xlsx')
+        self.wb = WBook(self.routeData).workbook
+        self.initExcel(self.routeData)
         self.initDataService()
 
     def getData(self, index):
@@ -103,7 +103,7 @@ class Data:
     
     def save(self):
         try:
-            self.wb.save(self.routeData + '/datos.xlsx')
+            self.wb.save(self.routeData)
         except:
             print("provider save: Ingrese un ruta correcta para almacenar los datos")
         
@@ -174,10 +174,10 @@ class Plotter:
 
 class WBook:
     def __init__(self, route):
-        fileExists = os.path.isfile(route + '/datos.xlsx')
+        fileExists = os.path.isfile(route)
         if fileExists:
             try:
-                self.workbook = load_workbook(filename= route + '/datos.xlsx')
+                self.workbook = load_workbook(filename= route)
             except:
                 print('Archivo dañado')
                 statusFile = False
@@ -187,8 +187,7 @@ class WBook:
 
 class Excel:
     def __init__(self, wb, titleSheet, head, route, initial = False):
-        fileExists = os.path.isfile(route + '/datos.xlsx')
-        self.route = route + '/'
+        fileExists = os.path.isfile(route)
         self.workbook = wb
 
         if fileExists and statusFile:
@@ -212,13 +211,13 @@ class LocalStorage():
         self.optionsServer = []
     
     def beginPrefs(self,route):
-        self.routePrefs = route + "/"
+        self.routePrefs = os.path.abspath(route + "/prefs.json")
     
     def readPrefs(self):
         try:
-            with open(self.routePrefs + 'prefs.json') as file:
+            with open(self.routePrefs) as file:
                 if file.read():
-                    file = open(self.routePrefs + 'prefs.json')
+                    file = open(self.routePrefs)
                     return json.load(file)
                 else:
                     print('No se encontraron las preferencias del usuario')
@@ -228,7 +227,7 @@ class LocalStorage():
             return False
 
     def updatePrefs(self,prefs):
-        with open(self.routePrefs + 'prefs.json', 'w') as file:
+        with open(self.routePrefs, 'w') as file:
             json.dump(prefs, file)
 
 
