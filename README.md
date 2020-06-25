@@ -1,4 +1,4 @@
-## Sistema de monitoreo de cultivos de cafe
+## Sistema de monitoreo de cultivos de café
 
 ## Dependencias
 
