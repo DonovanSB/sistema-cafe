@@ -11,7 +11,6 @@ from PyQt5.QtCore import QThread, QTimer,pyqtSignal, QObject
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 import widgets
 import provider
-import numpy as np
 import threading
 import schedule
 
