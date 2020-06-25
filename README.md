@@ -36,6 +36,7 @@ y agregando las siguientes lineas al final
 USER_ENV="your user"
 PASS_ENV="your password"
 ```
+reiniciar el sistema
 
 ## Inicio del programa
 Ejecutar main.py
