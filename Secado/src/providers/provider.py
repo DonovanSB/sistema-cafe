@@ -10,8 +10,10 @@ import json
 import logging
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
-logging.basicConfig(filename='secado.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-logging.error('No se pudo cargar el archivo')
+
+parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
+route = os.path.abspath(parent)
+logging.basicConfig(filename = route + '/secado.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 class Data:
     def __init__(self, textTempEnv, textHumEnv, textTemp1, textHum1, textTemp2, textHum2, textTemp3, textHum3, textHumGrain,):
@@ -102,6 +104,7 @@ class Data:
         try:
             self.wb.save(self.routeData)
         except:
+            logging.error('Ingrese un ruta correcta para almacenar los datos')
             print("provider save: Ingrese un ruta correcta para almacenar los datos")
         self.signals.statusFile = True
 
@@ -177,7 +180,8 @@ class WBook:
             try:
                 self.workbook = load_workbook(filename= route)
             except:
-                print('Archivo dañado')
+                logging.error('Archivo de respaldo de datos dañado')
+                print('Archivo de respaldo de datos dañado')
                 signals.statusFile = False
                 self.workbook = Workbook()
         else:
@@ -199,8 +203,6 @@ class Excel:
             else:
                 self.sheet = self.workbook.create_sheet(title=titleSheet)  
             self.sheet.append(head)
-        # print(len(tuple(self.sheet.rows)))
-        # print(self.sheet.cell(row=3, column=1).value)
 
     def addRow(self, data):
         self.sheet.append(data)
@@ -219,9 +221,11 @@ class LocalStorage():
                     file = open(self.routePrefs)
                     return json.load(file)
                 else:
+                    logging.error('No se encontraron las preferencias del usuario')
                     print('No se encontraron las preferencias del usuario')
                     return False
         except:
+            logging.error('No se pudo encontrar el archivo de prefs.json')
             print('No se pudo encontrar el archivo de prefs.json')
             return False
 
