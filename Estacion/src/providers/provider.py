@@ -13,7 +13,7 @@ rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
 route = os.path.abspath(parent)
-logging.basicConfig(filename = route + '/estacion.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename = route + '/estacion.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 class Data:
     def __init__(self,textTemp,textHum,textIrrad,textSpeed,textDir,textRain):
