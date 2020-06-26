@@ -7,9 +7,11 @@ import matplotlib.dates as dates
 import os
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
+import logging
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
-statusFile = True
+logging.basicConfig(filename='secado.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logging.error('No se pudo cargar el archivo')
 
 class Data:
     def __init__(self, textTempEnv, textHumEnv, textTemp1, textHum1, textTemp2, textHum2, textTemp3, textHum3, textHumGrain,):
@@ -101,7 +103,7 @@ class Data:
             self.wb.save(self.routeData)
         except:
             print("provider save: Ingrese un ruta correcta para almacenar los datos")
-        statusFile = True
+        self.signals.statusFile = True
 
 class DataService:
     def __init__(self, text, excel, numData, units,numVarSensor = 1):
@@ -167,23 +169,28 @@ class Plotter:
 
 class WBook:
     def __init__(self, route):
+
+        signals = Signals()
+
         fileExists = os.path.isfile(route)
         if fileExists:
             try:
                 self.workbook = load_workbook(filename= route)
             except:
                 print('Archivo dañado')
-                statusFile = False
+                signals.statusFile = False
                 self.workbook = Workbook()
         else:
             self.workbook = Workbook()
 
 class Excel:
     def __init__(self, wb, titleSheet, head, route, initial = False):
+
+        signals = Signals()
+
         fileExists = os.path.isfile(route)
         self.workbook = wb
-
-        if fileExists and statusFile:
+        if fileExists and signals.statusFile:
             self.sheet = self.workbook.get_sheet_by_name(titleSheet)
         else:
             if initial:
@@ -236,3 +243,5 @@ class Signals(QObject):
     signalUpdateStorageRoute = pyqtSignal(str)
     signalUpdateInputValue = pyqtSignal(float)
     signalUpdateGraph = pyqtSignal()
+
+    statusFile = True
