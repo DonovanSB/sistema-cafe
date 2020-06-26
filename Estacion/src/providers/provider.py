@@ -7,9 +7,13 @@ from openpyxl import Workbook, load_workbook
 import os
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
+import logging
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
-statusFile = True
+
+parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
+route = os.path.abspath(parent)
+logging.basicConfig(filename = route + '/estacion.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 class Data:
     def __init__(self,textTemp,textHum,textIrrad,textSpeed,textDir,textRain):
@@ -93,9 +97,10 @@ class Data:
         try:
             self.wb.save(self.routeData)
         except:
+            logging.error('Ingrese un ruta correcta para almacenar los datos')
             print("provider save: Ingrese un ruta correcta para almacenar los datos")
         
-        statusFile = True
+        self.signals.statusFile = True
 
 class DataService:
     def __init__(self, text, excel, numData, units,numVarSensor = 1):
@@ -162,23 +167,30 @@ class Plotter:
 
 class WBook:
     def __init__(self, route):
+
+        signals = Signals()
+
         fileExists = os.path.isfile(route)
         if fileExists:
             try:
                 self.workbook = load_workbook(filename= route)
             except:
-                print('Archivo dañado')
-                statusFile = False
+                logging.error('Archivo de respaldo de datos dañado')
+                print('Archivo de respaldo de datos dañado')
+                signals.statusFile = False
                 self.workbook = Workbook()
         else:
             self.workbook = Workbook()
 
 class Excel:
     def __init__(self, wb, titleSheet, head, route, initial = False):
+
+        signals = Signals()
+
         fileExists = os.path.isfile(route)
         self.workbook = wb
 
-        if fileExists and statusFile:
+        if fileExists and signals.statusFile:
             self.sheet = self.workbook.get_sheet_by_name(titleSheet)
         else:
             if initial:
@@ -187,8 +199,6 @@ class Excel:
             else:
                 self.sheet = self.workbook.create_sheet(title=titleSheet)  
             self.sheet.append(head)
-        # print(len(tuple(self.sheet.rows)))
-        # print(self.sheet.cell(row=3, column=1).value)
 
     def addRow(self, data):
         self.sheet.append(data)
@@ -207,9 +217,11 @@ class LocalStorage():
                     file = open(self.routePrefs)
                     return json.load(file)
                 else:
+                    logging.error('No se encontraron las preferencias del usuario')
                     print('No se encontraron las preferencias del usuario')
                     return False
         except:
+            logging.error('No se pudo encontrar el archivo de prefs.json')
             print('No se pudo encontrar el archivo de prefs.json')
             return False
 
@@ -232,3 +244,5 @@ class Signals(QObject):
     signalServerUpdate = pyqtSignal(bool)
     signalUpdateStorageRoute = pyqtSignal(str)
     signalUpdateGraph = pyqtSignal()
+
+    statusFile = True
