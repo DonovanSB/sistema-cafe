@@ -84,7 +84,7 @@ class Login(QDialog):
         self.password.setStyleSheet("font:14px; margin-left: 30px; margin-right: 30px; padding: 5px")
         self.password.setEchoMode(QLineEdit.Password)
         
-        self.password.setPlaceholderText("Ingrese su contraseña")
+        # self.password.setPlaceholderText("Ingrese su contraseña")
 
         #--- Ingresar---
         self.iniciar = QPushButton("Iniciar sesión",self)
