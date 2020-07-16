@@ -19,8 +19,7 @@ class Preferencias(QDialog):
         self.styleBottoms = "QPushButton {background-color:#0d47a1; color: white; border-radius: 5px;font: 15px bold; margin: 5px 5px 5px 5px ; padding: 5px;}" "QPushButton:hover { background-color: #5472d3}" "QPushButton:pressed { background-color: #002171}"
         
         #providers
-        self.prefs = provider.LocalStorage()
-        self.prefs.beginPrefs(route=rutaPrefsUser)
+        self.prefs = provider.LocalStorage(route=rutaPrefsUser, name = 'prefs')
         
         self.signals = provider.Signals()
 
@@ -30,7 +29,7 @@ class Preferencias(QDialog):
         self.show()
     
     def crearWidgets(self):
-        self.optionsServer = self.prefs.readPrefs()
+        self.optionsServer = self.prefs.read()
        
         groupboxServer = QGroupBox("Opciones del servidor ",self)
         
@@ -93,7 +92,6 @@ class Preferencias(QDialog):
 
     def savePrefs(self):
         dataJson = {"server":self.server.text(),"topic":self.topic.text(),"routeData":self.routeData.text()}
-        self.prefs.updatePrefs(dataJson)
-        self.signals.signalUpdateStorageRoute.emit(self.routeData.text())
-        self.signals.signalServerUpdate.emit(True)
+        self.prefs.update(dataJson)
+        self.signals.signalUpdatePrefs.emit(self.routeData.text())
         self.close()

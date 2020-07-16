@@ -8,12 +8,24 @@ import os
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
 import logging
+import paho.mqtt.client as mqtt 
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
-route = os.path.abspath(parent)
-logging.basicConfig(filename = route + '/fermentacion.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+root = os.path.abspath(parent)
+routeDatos = root + '/datos'
+
+logging.basicConfig(filename = root + '/fermentacion.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+def singleton(cls):    
+    instance = [None]
+    def wrapper(*args, **kwargs):
+        if instance[0] is None:
+            instance[0] = cls(*args, **kwargs)
+        return instance[0]
+
+    return wrapper
 
 class Data:
     def __init__(self,textTempR,textHumR,textTemp1,textTemp2,textTemp3,textBrix,textPh):
@@ -28,9 +40,12 @@ class Data:
 
         self.numData   = 1000
 
-        self.prefs = LocalStorage()
-        self.prefs.beginPrefs(route=rutaPrefsUser)
-        self.routeData = os.path.abspath(self.prefs.readPrefs()['routeData'] + '/datos.xlsx')
+        self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
+        try:
+            self.routeData = os.path.abspath(self.prefs.read()['routeData'] + '/datos.xlsx')
+        except:
+            logging.error('No se pudo encontrar la ruta de almacenamiento de datos en prefs.json')
+            self.routeData = routeDatos + '/datos.xlsx'
        
         # Inicializaciones para almacenamiento de datos
         self.wb = WBook(self.routeData).workbook
@@ -38,16 +53,19 @@ class Data:
         self.initDataService()
 
         self.signals = Signals()
-        self.signals.signalUpdateStorageRoute.connect(self.updateStorgeRoute)
+        self.signals.signalUpdatePrefs.connect(self.updatePrefs)
         self.signals.signalUpdateInputValue.connect(self.updateInputValue)
 
+        # Mqqt
+        self.client = Mqtt('fermentacion')
+
     def initDataService(self):
-        self.envService = DataService( [self.textTempR, self.textHumR], self.envExcel, self.numData, ["°C", "%"], 2)
-        self.temp1Service = DataService( self.textTemp1, self.temp1Excel, self.numData, "°C")
-        self.temp2Service = DataService( self.textTemp2, self.temp2Excel, self.numData, "°C")
-        self.temp3Service = DataService( self.textTemp3, self.temp3Excel, self.numData, "°C")
-        self.brixService = DataService( self.textBrix, self.brixExcel, self.numData, "Bx")
-        self.phService = DataService( self.textPh, self.temp3Excel, self.numData, "")
+        self.envService = DataService( ['T.ambiente', 'H.ambiente'], [self.textTempR, self.textHumR], self.envExcel, self.numData, ["°C", "%"], 2)
+        self.temp1Service = DataService( 'Temp1', self.textTemp1, self.temp1Excel, self.numData, "°C")
+        self.temp2Service = DataService( 'Temp2', self.textTemp2, self.temp2Excel, self.numData, "°C")
+        self.temp3Service = DataService( 'Temp3', self.textTemp3, self.temp3Excel, self.numData, "°C")
+        self.brixService = DataService( 'Brix', self.textBrix, self.brixExcel, self.numData, "Bx")
+        self.phService = DataService( 'ph', self.textPh, self.temp3Excel, self.numData, "")
 
     def initExcel(self, route):
         self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route, initial = True)
@@ -64,11 +82,12 @@ class Data:
         if name == "PH":
             self.phService.update(value, currentTime)
 
-    def updateStorgeRoute(self,route):
+    def updatePrefs(self,route):
         self.routeData = os.path.abspath(route+ '/datos.xlsx')
         self.wb = WBook(self.routeData).workbook
         self.initExcel(self.routeData)
         self.initDataService()
+        self.client.connect()
 
     def getData(self, index):
         datos= [self.envService.data[0], self.envService.data[1], self.temp1Service.data, self.temp2Service.data, self.temp3Service.data, self.brixService.data, self.phService.data]     
@@ -114,13 +133,17 @@ class Data:
         self.signals.statusFile = True
             
 class DataService:
-    def __init__(self, text, excel, numData, units,numVarSensor = 1):
+    def __init__(self, name, text, excel, numData, units,numVarSensor = 1):
+        self.name = name
         self.text = text
         self.excel = excel
         self.numData = numData
         self.numVarSensor = numVarSensor
         self.units = units
         self.signals = Signals()
+
+        # Mqqt
+        self.client = Mqtt('fermentacion')
 
         if self.numVarSensor > 1:
             self.data = [[] for i in range(self.numVarSensor)]
@@ -139,6 +162,8 @@ class DataService:
                 if len(self.data[i]) > self.numData:
                     self.data[i].pop(0)
                 self.text[i].setText( str(data[i]) +" "+ self.units[i])
+                # Enviar datos al servidor
+                self.client.publish(json.dumps({self.name[i]:data[i], 'time':str(time)}))
             datos = [time]
             datos.extend(data)
             self.excel.addRow(datos)
@@ -148,10 +173,66 @@ class DataService:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
             self.excel.addRow([time, data])
+            # Enviar datos al servidor
+            self.client.publish(json.dumps({self.name:data, 'time':str(time)}))
 
         # Actualizar grafica  
         self.signals.signalUpdateGraph.emit()
         
+@singleton
+class Mqtt:
+    def __init__(self, clientID):
+        self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
+        self.pendingData = LocalStorage(route=routeDatos, name = 'pending')
+        self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
+        self.isPending = False
+        self.data = []
+        try:
+            self.topic = self.prefs.read()['topic']
+        except:
+            logging.error('No se encontró topic en prefs.json')
+            self.topic = 'estacion/secado'
+        self.connect()
+
+    def connect(self):
+        try:
+            self.brokerAddress = self.prefs.read()['server']
+        except:
+            logging.error('No se encontró server en prefs.json')
+        try:
+            self.client.username_pw_set(username="usuario_publicador_1",password="123")
+            if self.client.is_connected:
+                self.client.disconnect()
+                self.client.connect(self.brokerAddress, port=1884)
+            else:
+                self.client.connect(self.brokerAddress, port=1884)
+        except:
+            logging.error('No se pudo conectar al servidor')
+    
+    def publish(self, payload):
+        info = self.client.publish(self.topic, payload)
+        if info.is_published() == False:
+            logging.error('No se pudo publicar los datos en el servidor')
+            if self.pendingData.read():
+                self.data = self.pendingData.read()
+            self.data.append(payload)
+            self.pendingData.update(self.data)
+            self.isPending = True
+    
+    def verifyPending(self):
+        if self.isPending:
+            data = self.pendingData.read()
+            dataTemp = data
+            if data:
+                for item in dataTemp:
+                    try:
+                        self.client.publish(self.topic, item)
+                        data.remove(item)
+                    except:
+                        logging.error('No se pudo publicar los datos en el servidor')
+                self.pendingData.update(data)
+            else:
+                self.isPending = False      
 
 class Plotter:
     def __init__(self,Figure,ax):
@@ -216,13 +297,12 @@ class Excel:
      
 
 class LocalStorage():
-    def __init__(self):
+    def __init__(self, route, name):
         self.optionsServer = []
-    
-    def beginPrefs(self,route):
-        self.routePrefs = os.path.abspath(route + "/prefs.json")
-    
-    def readPrefs(self):
+        self.routePrefs = os.path.abspath(route + "/" + name + ".json")
+        self.name = name
+
+    def read(self):
         try:
             with open(self.routePrefs) as file:
                 if file.read():
@@ -233,29 +313,20 @@ class LocalStorage():
                     print('No se encontraron las preferencias del usuario')
                     return False
         except:
-            logging.error('No se pudo encontrar el archivo de prefs.json')
-            print('No se pudo encontrar el archivo de prefs.json')
+            logging.error('No se pudo encontrar el archivo ' + self.name + '.json')
+            print('No se pudo encontrar el archivo ' + self.name + '.json')
             return False
 
-    def updatePrefs(self,prefs):
+    def update(self,prefs):
         with open(self.routePrefs, 'w') as file:
             json.dump(prefs, file)
 
 
-
-def singleton(cls):    
-    instance = [None]
-    def wrapper(*args, **kwargs):
-        if instance[0] is None:
-            instance[0] = cls(*args, **kwargs)
-        return instance[0]
-
-    return wrapper
 @singleton
 class Signals(QObject):
-    signalServerUpdate = pyqtSignal(bool)
-    signalUpdateStorageRoute = pyqtSignal(str)
-    signalUpdateInputValue = pyqtSignal(str,float)
+    signalUpdatePrefs = pyqtSignal(str)
+    signalUpdateInputValue = pyqtSignal(float)
     signalUpdateGraph = pyqtSignal()
 
     statusFile = True
+    dataPending = False

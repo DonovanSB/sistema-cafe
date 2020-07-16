@@ -35,7 +35,6 @@ class Estacion(QMainWindow):
         
         # signals
         self.signals = provider.Signals()
-        self.signals.signalServerUpdate.connect(self.updateServer)
         self.signals.signalUpdateGraph.connect(self.updateGraph)
         
         #---Crear Widgets---
@@ -44,18 +43,19 @@ class Estacion(QMainWindow):
         #--- Inicio de Instacias de providers
         self.plot = provider.Plotter(self.graph.FIG,self.graph.ax1)
         self.data = provider.Data(self.environment.tempValue,self.environment.humValue,self.zone1.tempValue,self.zone1.humValue,self.zone2.tempValue,self.zone2.humValue,self.zone3.tempValue,self.zone3.humValue,self.humGrain.text)
-        self.prefs = provider.LocalStorage()
-        self.prefs.beginPrefs(route=rutaProviders)
-
-        #Señal para actualizar Datos servidor
-        self.updateServerPrefs = False
+        self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
         
         #----Iniciar subproceso---
         self.initTask = True
 
+        self.thread = Thread(self.data)
+        self.thread.start()
+
+        # Guardar datos cada t segundos
         timer = QTimer(self)
-        timer.timeout.connect(self.task2)
-        timer.start(1000)
+        timer.timeout.connect(self.data.save)
+        timer.start(5000)
+
         #-- Mostrar Ventana---
         self.show()
         self.setFocus()
@@ -107,28 +107,11 @@ class Estacion(QMainWindow):
         gridLayout.addWidget(self.toolbarFig,2,0,1,5)
         self.setCentralWidget(widgetGrid)
 
-    def updateServer(self, update):
-        self.updateServerPrefs = update
-
     def updateGraph(self):
         # Graficar
         indexActual = self.menuVis.listaVariables.currentIndex()
         variableActual = self.menuVis.listaVariables.currentText()
-        self.plot.plot(self.data.getTime(indexActual), self.data.getData(indexActual),variableActual, indexActual)
-
-    def task2(self):
-        
-        if self.initTask:
-            self.thread = Thread(self.data)
-            self.thread.start()
-            self.initTask = False
-
-        if(self.updateServerPrefs):
-            print(self.prefs.readPrefs()["server"])
-            print(self.prefs.readPrefs()["topic"])
-            print(self.prefs.readPrefs()["routeData"])
-            self.updateServerPrefs = False
-            
+        self.plot.plot(self.data.getTime(indexActual), self.data.getData(indexActual),variableActual, indexActual)          
     
 class Thread(QThread):
 
@@ -142,7 +125,7 @@ class Thread(QThread):
         schedule.every(10).seconds.do(self.data.env1)
         schedule.every(15).seconds.do(self.data.env2)
         schedule.every(20).seconds.do(self.data.env3)
-        schedule.every(5).seconds.do(self.data.save)
+        schedule.every(5).seconds.do(self.data.client.verifyPending)
 
         while self.threadactive:
             schedule.run_pending()
