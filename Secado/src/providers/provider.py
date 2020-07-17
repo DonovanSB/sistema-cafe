@@ -93,8 +93,8 @@ class Data:
         self.wb = WBook(self.routeData ).workbook
         self.initExcel(self.routeData )
         self.initDataService()
-        thread = Thread(target = self.client.connect)
-        thread.start()
+        self.thread = Thread(target = self.client.connect)
+        self.thread.start()
         
 
     def getData(self, index):
@@ -202,8 +202,8 @@ class Mqtt:
             self.topic = 'estacion/secado'
 
         # Conectar en segundo plano
-        thread = Thread(target = self.connect)
-        thread.start()
+        self.thread = Thread(target = self.connect)
+        self.thread.start()
 
     def connect(self):
         self.signals.signalIsLoanding.emit(True)
