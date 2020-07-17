@@ -6,10 +6,12 @@ route = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(route + "/src/widgets")
 sys.path.append(route + "/src/providers")
 import time
-from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QDesktopWidget, QWidget, QGridLayout, QAction, QDialog
+from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QDesktopWidget, QWidget, QGridLayout, QAction, QDialog, QLabel
 from PyQt5.QtCore import QThread, QTimer,pyqtSignal, QObject
+from PyQt5.QtGui import QColor
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 import widgets
+from waitingspinnerwidget import QtWaitingSpinner
 import provider
 import threading
 import schedule
@@ -36,13 +38,14 @@ class Estacion(QMainWindow):
         # signals
         self.signals = provider.Signals()
         self.signals.signalUpdateGraph.connect(self.updateGraph)
+        self.signals.signalAlert.connect(self.alerts)
         
         #---Crear Widgets---
         self.createWidgets()
 
         #--- Inicio de Instacias de providers
         self.plot = provider.Plotter(self.graph.FIG,self.graph.ax1)
-        self.data = provider.Data(self.environment.tempValue,self.environment.humValue,self.zone1.tempValue,self.zone1.humValue,self.zone2.tempValue,self.zone2.humValue,self.zone3.tempValue,self.zone3.humValue,self.humGrain.text)
+        self.data = provider.Data(self.loading, self.environment.tempValue,self.environment.humValue,self.zone1.tempValue,self.zone1.humValue,self.zone2.tempValue,self.zone2.humValue,self.zone3.tempValue,self.zone3.humValue,self.humGrain.text)
         self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
         
         #----Iniciar subproceso---
@@ -50,11 +53,6 @@ class Estacion(QMainWindow):
 
         self.thread = Thread(self.data)
         self.thread.start()
-
-        # Guardar datos cada t segundos
-        timer = QTimer(self)
-        timer.timeout.connect(self.data.save)
-        timer.start(5000)
 
         #-- Mostrar Ventana---
         self.show()
@@ -64,12 +62,16 @@ class Estacion(QMainWindow):
         
         self.data.save()
 
-        self.reply = QMessageBox.question(None,'',"¿Realmente desea cerrar la aplicación?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        self.reply = QMessageBox.question(None,' ',"¿Realmente desea cerrar la aplicación?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if self.reply == QMessageBox.Yes:
             self.thread.stop()
             event.accept()
         else:
             event.ignore()
+
+    def alerts(self, message):
+        QMessageBox.critical(None,'Alerta',message, QMessageBox.Ok)
+
 
     def centerWindow(self):
         S_Screen = QDesktopWidget().availableGeometry().center()
@@ -107,6 +109,8 @@ class Estacion(QMainWindow):
         gridLayout.addWidget(self.toolbarFig,2,0,1,5)
         self.setCentralWidget(widgetGrid)
 
+        self.loading = widgets.Loading(self)
+
     def updateGraph(self):
         # Graficar
         indexActual = self.menuVis.listaVariables.currentIndex()
@@ -126,6 +130,7 @@ class Thread(QThread):
         schedule.every(15).seconds.do(self.data.env2)
         schedule.every(20).seconds.do(self.data.env3)
         schedule.every(5).seconds.do(self.data.client.verifyPending)
+        schedule.every(5).seconds.do(self.data.save)
 
         while self.threadactive:
             schedule.run_pending()

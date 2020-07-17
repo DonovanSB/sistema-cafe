@@ -5,13 +5,14 @@ import os
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/src/windows")
-from PyQt5.QtWidgets import QFrame, QLineEdit, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout,QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
+from PyQt5.QtWidgets import QFrame, QLineEdit, QPushButton, QGroupBox, QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget, QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 import matplotlib.dates as dates
 import matplotlib.pyplot as plt 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from waitingspinnerwidget import QtWaitingSpinner
 import prefs
 import keyboard
 import login
@@ -181,5 +182,18 @@ class Graph(QFrame):
 
         vboxFigura = QVBoxLayout(self)
         vboxFigura.addWidget(self.FIG)
+
+class Loading(QtWaitingSpinner):
+    def __init__(self, parent, ):
+        super(Loading,self).__init__(parent)
+        self.setRoundness(70.0)
+        self.setMinimumTrailOpacity(15.0)
+        self.setTrailFadePercentage(70.0)
+        self.setNumberOfLines(12)
+        self.setLineLength(20)
+        self.setLineWidth(5)
+        self.setInnerRadius(20)
+        self.setRevolutionsPerSecond(1)
+        self.setColor(QColor(81, 4, 71))
 
 
