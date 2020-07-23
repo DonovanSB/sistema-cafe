@@ -5,7 +5,7 @@ from datetime import datetime
 import matplotlib.dates as dates
 from openpyxl import Workbook, load_workbook
 import os
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, QThread
 import json
 import logging
 import paho.mqtt.client as mqtt 
@@ -27,7 +27,8 @@ def singleton(cls):
     return wrapper
 
 class Data:
-    def __init__(self,textTemp,textHum,textIrrad,textSpeed,textDir,textRain):
+    def __init__(self,loading,textTemp,textHum,textIrrad,textSpeed,textDir,textRain):
+        self.loading = loading
         self.textTemp = textTemp
         self.textHum = textHum
         self.textIrrad = textIrrad
@@ -50,6 +51,7 @@ class Data:
         self.initDataService()
 
         self.signals = Signals()
+        self.signals.signalIsLoanding.connect(self.isLoading)
         self.signals.signalUpdatePrefs.connect(self.updatePrefs)
 
         # Mqqt
@@ -69,12 +71,19 @@ class Data:
         self.directionExcel = Excel(wb = self.wb, titleSheet='Direccion V', head = ['Tiempo', 'Direccion'], route = route)
         self.rainExcel = Excel(wb = self.wb, titleSheet='Lluvia', head = ['Tiempo', 'Lluvia'], route = route)
 
+    def isLoading(self, loading):
+        if loading:
+            self.loading.start()
+        else:
+            self.loading.stop()
+    
     def updatePrefs(self,route):
         self.routeData = os.path.abspath(route + '/datos.xlsx')
         self.wb = WBook(self.routeData).workbook
         self.initExcel(self.routeData)
         self.initDataService()
-        self.client.connect()
+        self.thread = Thread(target = self.client.connect)
+        self.thread.start()
     
     def getData(self, index):
         data = [self.envService.data[0], self.envService.data[1], self.irradService.data, self.speedService.data, self.directionService.data, self.rainService.data]
@@ -175,14 +184,20 @@ class Mqtt:
         self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
         self.isPending = False
         self.data = []
+
+        self.signals = Signals()
         try:
             self.topic = self.prefs.read()['topic']
         except:
             logging.error('No se encontró topic en prefs.json')
-            self.topic = 'estacion/secado'
-        self.connect()
+            self.topic = 'estacion/estacion'
+
+        # Conectar en segundo plano
+        self.thread = Thread(target = self.connect)
+        self.thread.start()
 
     def connect(self):
+        self.signals.signalIsLoanding.emit(True)
         try:
             self.brokerAddress = self.prefs.read()['server']
         except:
@@ -195,7 +210,10 @@ class Mqtt:
             else:
                 self.client.connect(self.brokerAddress, port=1884)
         except:
+            self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
+        
+        self.signals.signalIsLoanding.emit(False)
     
     def publish(self, payload):
         info = self.client.publish(self.topic, payload)
@@ -220,7 +238,7 @@ class Mqtt:
                         logging.error('No se pudo publicar los datos en el servidor')
                 self.pendingData.update(data)
             else:
-                self.isPending = False    
+                self.isPending = False     
 
 class Plotter:
     def __init__(self,Figure,ax):
@@ -310,11 +328,26 @@ class LocalStorage():
             json.dump(prefs, file)
 
 
+class Thread(QThread):
+
+    def __init__(self, target):
+        super(Thread,self).__init__()
+        self.threadactive = True
+        self.target = target
+
+    def run(self):
+        self.target()
+    
+    def stop(self):
+        self.threadactive = False
+
 @singleton
 class Signals(QObject):
     signalUpdatePrefs = pyqtSignal(str)
     signalUpdateInputValue = pyqtSignal(float)
     signalUpdateGraph = pyqtSignal()
+    signalIsLoanding = pyqtSignal(bool)
+    signalAlert = pyqtSignal(str)
 
     statusFile = True
     dataPending = False

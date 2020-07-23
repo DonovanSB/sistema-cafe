@@ -36,13 +36,14 @@ class Estacion(QMainWindow):
         # Signals
         self.signals = provider.Signals()
         self.signals.signalUpdateGraph.connect(self.updateGraph)
+        self.signals.signalAlert.connect(self.alerts)
         
         #---Crear Widgets---
         self.createWidgets()
 
         #--- Inicio de Instacias de providers
         self.plot = provider.Plotter(self.graph.FIG,self.graph.ax1)
-        self.data = provider.Data(self.environment.tempValue,self.environment.humValue,self.temperature1.text,self.temperature2.text,self.temperature3.text,self.refractometer.text,self.phWidget.text)
+        self.data = provider.Data(self.loading, self.environment.tempValue,self.environment.humValue,self.temperature1.text,self.temperature2.text,self.temperature3.text,self.refractometer.text,self.phWidget.text)
         self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
 
         #Señal para actualizar Datos servidor
@@ -53,11 +54,6 @@ class Estacion(QMainWindow):
 
         self.thread = Thread(self.data)
         self.thread.start()
-
-        # Guardar datos cada t segundos
-        timer = QTimer(self)
-        timer.timeout.connect(self.data.save)
-        timer.start(5000)
 
         #-- Mostrar Ventana---
         self.show()
@@ -73,6 +69,9 @@ class Estacion(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
+    def alerts(self, message):
+        QMessageBox.critical(None,'Alerta',message, QMessageBox.Ok)
     
     def centerWindow(self):
         S_Screen = QDesktopWidget().availableGeometry().center()
@@ -112,6 +111,8 @@ class Estacion(QMainWindow):
         gridLayout.addWidget(self.toolbarFig,2,0,1,6)
         self.setCentralWidget(widgetGrid)
 
+        self.loading = widgets.Loading(self)
+
     def updateGraph(self):
         # Graficar
         indexActual = self.menuVis.listaVariables.currentIndex()
@@ -130,6 +131,7 @@ class Thread(QThread):
         schedule.every(15).seconds.do(self.data.temp2)
         schedule.every(20).seconds.do(self.data.temp3)
         schedule.every(5).seconds.do(self.data.client.verifyPending)
+        schedule.every(5).seconds.do(self.data.save)
         
         while self.threadactive:
             schedule.run_pending()

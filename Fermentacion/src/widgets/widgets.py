@@ -13,6 +13,7 @@ import matplotlib.dates as dates
 import matplotlib.pyplot as plt 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from waitingspinnerwidget import QtWaitingSpinner
 import provider
 import prefs
 import keyboard
@@ -214,5 +215,18 @@ class Graph(QFrame):
 
         vboxFigura = QVBoxLayout(self)
         vboxFigura.addWidget(self.FIG)
+
+class Loading(QtWaitingSpinner):
+    def __init__(self, parent, ):
+        super(Loading,self).__init__(parent)
+        self.setRoundness(70.0)
+        self.setMinimumTrailOpacity(15.0)
+        self.setTrailFadePercentage(70.0)
+        self.setNumberOfLines(12)
+        self.setLineLength(20)
+        self.setLineWidth(5)
+        self.setInnerRadius(20)
+        self.setRevolutionsPerSecond(1)
+        self.setColor(QColor(81, 4, 71))
 
 
