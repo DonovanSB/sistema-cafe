@@ -9,7 +9,8 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 from PyQt5.QtWidgets import QMessageBox
 import json
 import logging
-import paho.mqtt.client as mqtt 
+import paho.mqtt.client as mqtt
+import time 
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -63,6 +64,9 @@ class Data:
 
         # Mqqt
         self.client = Mqtt('secado')
+        
+        self.threadForever = ThreadForever(target=self.client.verifyPending)
+        self.threadForever.start()
     
     def initDataService(self):
         self.envService = DataService( ['T.ambiente', 'H.ambiente'], [self.textTempEnv, self.textHumEnv], self.envExcel, self.numData, ["°C", "%"], 2)
@@ -353,6 +357,22 @@ class Thread(QThread):
 
     def run(self):
         self.target()
+    
+    def stop(self):
+        self.threadactive = False
+
+class ThreadForever(QThread):
+
+    def __init__(self, target, every=5):
+        super(ThreadForever,self).__init__()
+        self.threadactive = True
+        self.target = target
+        self.every = every
+
+    def run(self):
+        while self.threadactive:
+            self.target()
+            time.sleep(self.every)
     
     def stop(self):
         self.threadactive = False
