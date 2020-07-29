@@ -332,8 +332,8 @@ class LocalStorage():
                     file = open(self.routePrefs)
                     return json.load(file)
                 else:
-                    logging.warning('El archivo' + self.name + '.json está vacío')
-                    print('El archivo' + self.name + '.json está vacío')
+                    logging.warning('El archivo ' + self.name + '.json está vacío')
+                    print('El archivo ' + self.name + '.json está vacío')
                     return False
         except:
             logging.error('No se pudo encontrar el archivo ' + self.name + '.json')
