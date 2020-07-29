@@ -194,8 +194,12 @@ class Mqtt:
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         self.pendingData = LocalStorage(route=routeDatos, name = 'pending')
         self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
-        self.isPending = False
-        self.data = []
+        self.isPending = True
+        self.isConnected = False
+        if self.pendingData.read():
+            self.data = self.pendingData.read()
+        else:
+            self.data = []
 
         self.signals = Signals()
         try:
@@ -221,9 +225,12 @@ class Mqtt:
                 self.client.connect(self.brokerAddress, port=1884)
             else:
                 self.client.connect(self.brokerAddress, port=1884)
+            
+            self.isConnected = True
         except:
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
+            self.isConnected = False
         
         self.signals.signalIsLoanding.emit(False)
     
@@ -236,21 +243,25 @@ class Mqtt:
             self.data.append(payload)
             self.pendingData.update(self.data)
             self.isPending = True
+            self.isConnected = False
+        else:
+            self.isConnected = True
     
     def verifyPending(self):
-        if self.isPending:
-            data = self.pendingData.read()
-            dataTemp = data
-            if data:
+        if self.isPending and self.isConnected:
+            dataTemp = self.data
+            if dataTemp:
                 for item in dataTemp:
-                    try:
-                        self.client.publish(self.topic, item)
-                        data.remove(item)
-                    except:
-                        logging.error('No se pudo publicar los datos en el servidor')
-                self.pendingData.update(data)
+                    info = self.client.publish(self.topic, item)
+                    if info.is_published():
+                        self.data.remove(item)
+                        self.pendingData.update(self.data)
+                    else:
+                        logging.error('No se pudo publicar los datos en el servidor')  
+                        self.isConnected = False   
             else:
-                self.isPending = False      
+                self.isPending = False                       
+    
 
 class Plotter:
     def __init__(self,Figure,ax):

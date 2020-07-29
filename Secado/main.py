@@ -125,11 +125,11 @@ class Thread(QThread):
         self.data = data
 
     def run(self):
-        schedule.every(5).seconds.do(self.data.env)
-        schedule.every(10).seconds.do(self.data.env1)
-        schedule.every(15).seconds.do(self.data.env2)
-        schedule.every(20).seconds.do(self.data.env3)
-        schedule.every(5).seconds.do(self.data.client.verifyPending)
+        schedule.every(1).seconds.do(self.data.env)
+        schedule.every(1).seconds.do(self.data.env1)
+        schedule.every(1).seconds.do(self.data.env2)
+        schedule.every(1).seconds.do(self.data.env3)
+        schedule.every(0.5).seconds.do(self.data.client.verifyPending)
         schedule.every(10).seconds.do(self.data.save)
 
         while self.threadactive:
