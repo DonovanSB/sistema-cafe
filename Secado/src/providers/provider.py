@@ -238,7 +238,7 @@ class Mqtt:
     def publish(self, payload):
         info = self.client.publish(self.topic, payload)
         if info.is_published() == False:
-            logging.error('No se pudo publicar los datos en el servidor')
+            # logging.error('No se pudo publicar los datos en el servidor')
             if self.pendingData.read():
                 self.data = self.pendingData.read()
             self.data.append(payload)
@@ -257,8 +257,9 @@ class Mqtt:
                     if info.is_published():
                         self.data.remove(item)
                         self.pendingData.update(self.data)
+                        self.isConnected = True
                     else:
-                        logging.error('No se pudo publicar los datos en el servidor')  
+                        # logging.error('No se pudo publicar los datos en el servidor')  
                         self.isConnected = False   
             else:
                 self.isPending = False                       
