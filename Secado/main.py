@@ -125,6 +125,7 @@ class Thread(QThread):
         self.data = data
 
     def run(self):
+        
         schedule.every(5).seconds.do(self.data.env)
         schedule.every(5).seconds.do(self.data.env1)
         schedule.every(5).seconds.do(self.data.env2)
