@@ -200,9 +200,10 @@ class Mqtt:
         self.isConnected = False
         
         self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
+        self.nameTable = 'pending'
         fields = '(id integer PRIMARY KEY, name text, value real, time date)'
-        self.sqlite.createTable(nameTable = 'pending', fields = fields)
-        self.names = '(name, value, time)'
+        self.names = self.nameTable + '(name, value, time)  VALUES(?, ?, ?)'
+        self.sqlite.createTable(nameTable = self.nameTable, fields = fields)
 
         self.signals = Signals()
         try:
@@ -223,12 +224,7 @@ class Mqtt:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            if self.client.is_connected:
-                self.client.disconnect()
-                self.client.connect(self.brokerAddress, port=1884)
-            else:
-                self.client.connect(self.brokerAddress, port=1884)
-            
+            self.client.connect(self.brokerAddress, port=1884)
             self.isConnected = True
         except:
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
@@ -284,7 +280,7 @@ class SQLite:
         self.con.commit()
 
     def insert(self, data, names):
-        self.cursor.execute('INSERT INTO '+ self.nameTable + names + ' VALUES(?, ?, ?)', data)
+        self.cursor.execute('INSERT INTO '+ names, data)
         self.con.commit()
 
     def removeById(self, id):
