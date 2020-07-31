@@ -272,8 +272,8 @@ class SQLite:
             return con
 
         except Error:
-            logging.error(Error)
-            print(Error)
+            logging.error(Error.message)
+            print(Error.message)
     def createTable(self, nameTable, fields):
         self.nameTable = nameTable
         self.cursor.execute('create table if not exists ' + self.nameTable + fields)
