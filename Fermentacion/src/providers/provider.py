@@ -8,7 +8,10 @@ import os
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 import json
 import logging
-import paho.mqtt.client as mqtt 
+import paho.mqtt.client as mqtt
+import time
+import sqlite3
+from sqlite3 import Error 
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -43,14 +46,18 @@ class Data:
 
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         try:
-            self.routeData = os.path.abspath(self.prefs.read()['routeData'] + '/datos.xlsx')
+            self.routeData = os.path.abspath(self.prefs.read()['routeData'])
+            isExist = os.path.exists(self.routeData)
+            if isExist:
+                self.routeData = os.path.abspath(self.routeData + '/data')
+            else:
+                self.routeData = routeDatos + '/data'
         except:
             logging.error('No se pudo encontrar la ruta de almacenamiento de datos en prefs.json')
-            self.routeData = routeDatos + '/datos.xlsx'
+            self.routeData = routeDatos + '/datos.db'
        
         # Inicializaciones para almacenamiento de datos
-        self.wb = WBook(self.routeData).workbook
-        self.initExcel(self.routeData)
+        self.initSQLite(self.routeData)
         self.initDataService()
 
         self.signals = Signals()
@@ -61,21 +68,34 @@ class Data:
         # Mqqt
         self.client = Mqtt('fermentacion')
 
-    def initDataService(self):
-        self.envService = DataService( ['T.ambiente', 'H.ambiente'], [self.textTempR, self.textHumR], self.envExcel, self.numData, ["°C", "%"], 2)
-        self.temp1Service = DataService( 'Temp1', self.textTemp1, self.temp1Excel, self.numData, "°C")
-        self.temp2Service = DataService( 'Temp2', self.textTemp2, self.temp2Excel, self.numData, "°C")
-        self.temp3Service = DataService( 'Temp3', self.textTemp3, self.temp3Excel, self.numData, "°C")
-        self.brixService = DataService( 'Brix', self.textBrix, self.brixExcel, self.numData, "Bx")
-        self.phService = DataService( 'ph', self.textPh, self.temp3Excel, self.numData, "")
+        # Verificar si hay datos pendiendes en un nuevo hilo
+        self.threadForever = ThreadForever(target=self.client.verifyPending)
+        self.threadForever.start()
 
-    def initExcel(self, route):
-        self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route, initial = True)
-        self.temp1Excel = Excel(wb = self.wb, titleSheet='Temperatura 1', head = ['Tiempo', 'Temperatura'], route = route)
-        self.temp2Excel = Excel(wb = self.wb, titleSheet='Temperatura 2', head = ['Tiempo', 'Temperatura'], route = route)
-        self.temp3Excel = Excel(wb = self.wb, titleSheet='Temperatura 3', head = ['Tiempo', 'Temperatura'], route = route)
-        self.brixExcel = Excel(wb = self.wb, titleSheet='Brix', head = ['Tiempo', 'Brix'], route = route)
-        self.phExcel = Excel(wb = self.wb, titleSheet='PH', head = ['Tiempo', 'PH'], route = route)
+    def initDataService(self):
+        namesEnv = '(time, temperatura, humedad)  VALUES(?, ?, ?)'
+        namesTemp = '(time, temperatura)  VALUES(?, ?)'
+        namesBrix = '(time, brix)  VALUES(?, ?)'
+        namesPH = '(time, ph)  VALUES(?, ?)'
+        self.envService = DataService( self.sqlite, 'Ambiente', namesEnv, ['T.ambiente', 'H.ambiente'], [self.textTempR, self.textHumR], self.numData, ["°C", "%"], 2)
+        self.temp1Service = DataService( self.sqlite, 'Temperatura1', namesTemp, 'Temp1', self.textTemp1, self.numData, "°C")
+        self.temp2Service = DataService( self.sqlite, 'Temperatura2', namesTemp, 'Temp2', self.textTemp2, self.numData, "°C")
+        self.temp3Service = DataService( self.sqlite, 'Temperatura3', namesTemp, 'Temp3', self.textTemp3, self.numData, "°C")
+        self.brixService = DataService( self.sqlite, 'Brix', namesBrix, 'Brix', self.textBrix, self.numData, "Bx")
+        self.phService = DataService( self.sqlite, 'PH', namesPH, 'ph', self.textPh, self.numData, "")
+
+    def initSQLite(self, route):
+        self.sqlite = SQLite(nameDB = route)
+        fieldsEnv = '(time date, temperatura real, humedad real)'
+        fieldsTemp = '(time date, temperatura real)'
+        fieldsBrix = '(time date, brix real)'
+        fieldsPH = '(time date, ph real)'
+        self.sqlite.createTable(nameTable = 'Ambiente', fields = fieldsEnv)
+        self.sqlite.createTable(nameTable = 'Temperatura1', fields = fieldsTemp)
+        self.sqlite.createTable(nameTable = 'Temperatura2', fields = fieldsTemp)
+        self.sqlite.createTable(nameTable = 'Temperatura3', fields = fieldsTemp)
+        self.sqlite.createTable(nameTable = 'Brix', fields = fieldsBrix)
+        self.sqlite.createTable(nameTable = 'PH', fields = fieldsPH)
 
     def isLoading(self, loading):
         if loading:
@@ -91,9 +111,9 @@ class Data:
             self.phService.update(value, currentTime)
 
     def updatePrefs(self,route):
-        self.routeData = os.path.abspath(route+ '/datos.xlsx')
-        self.wb = WBook(self.routeData).workbook
-        self.initExcel(self.routeData)
+        self.sqlite.con.close()
+        self.routeData = os.path.abspath(route + '/data')
+        self.initSQLite(self.routeData)
         self.initDataService()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
@@ -131,21 +151,13 @@ class Data:
         temperature = random.randint(18, 25)
         currentTime = datetime.now()
         self.temp3Service.update(temperature, currentTime)
-    
-    def save(self):
-        try:
-            self.wb.save(self.routeData)
-        except:
-            logging.error('Ingrese un ruta correcta para almacenar los datos')
-            print("provider save: Ingrese un ruta correcta para almacenar los datos")
-        
-        self.signals.statusFile = True
             
 class DataService:
-    def __init__(self, name, text, excel, numData, units,numVarSensor = 1):
+    def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
+        self.sqlite = sqlite
+        self.namesDB = nameTable + namesDB
         self.name = name
         self.text = text
-        self.excel = excel
         self.numData = numData
         self.numVarSensor = numVarSensor
         self.units = units
@@ -172,19 +184,18 @@ class DataService:
                     self.data[i].pop(0)
                 self.text[i].setText( str(data[i]) +" "+ self.units[i])
                 # Enviar datos al servidor
-                self.client.publish(json.dumps({self.name[i]:data[i], 'time':str(time)}))
+                self.client.publish(self.name[i],data[i],time)
             datos = [time]
             datos.extend(data)
-            self.excel.addRow(datos)
+            self.sqlite.insert(datos, names = self.namesDB)
         else:
             self.data.append(data)
             if len(self.data) > self.numData:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
-            self.excel.addRow([time, data])
             # Enviar datos al servidor
-            self.client.publish(json.dumps({self.name:data, 'time':str(time)}))
-
+            self.client.publish(self.name, data, time)
+            self.sqlite.insert((time, data), names = self.namesDB)
         # Actualizar grafica  
         self.signals.signalUpdateGraph.emit()
         
@@ -192,14 +203,15 @@ class DataService:
 class Mqtt:
     def __init__(self, clientID):
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
-        self.pendingData = LocalStorage(route=routeDatos, name = 'pending')
         self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
         self.isPending = True
         self.isConnected = False
-        if self.pendingData.read():
-            self.data = self.pendingData.read()
-        else:
-            self.data = []
+        
+        self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
+        self.nameTable = 'pending'
+        fields = '(id integer PRIMARY KEY, name text, value real, time date)'
+        self.names = self.nameTable + '(name, value, time)  VALUES(?, ?, ?)'
+        self.sqlite.createTable(nameTable = self.nameTable, fields = fields)
 
         self.signals = Signals()
         try:
@@ -220,12 +232,7 @@ class Mqtt:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            if self.client.is_connected:
-                self.client.disconnect()
-                self.client.connect(self.brokerAddress, port=1884)
-            else:
-                self.client.connect(self.brokerAddress, port=1884)
-            
+            self.client.connect(self.brokerAddress, port=1884)
             self.isConnected = True
         except:
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
@@ -234,14 +241,12 @@ class Mqtt:
         
         self.signals.signalIsLoanding.emit(False)
     
-    def publish(self, payload):
+    def publish(self, name, data, time):
+        payload = json.dumps({name:data,'time':str(time)})
         info = self.client.publish(self.topic, payload)
         if info.is_published() == False:
-            logging.error('No se pudo publicar los datos en el servidor')
-            if self.pendingData.read():
-                self.data = self.pendingData.read()
-            self.data.append(payload)
-            self.pendingData.update(self.data)
+            # logging.error('No se pudo publicar los datos en el servidor')
+            self.sqlite.insert((name, data, time), names = self.names)
             self.isPending = True
             self.isConnected = False
         else:
@@ -249,19 +254,50 @@ class Mqtt:
     
     def verifyPending(self):
         if self.isPending and self.isConnected:
-            dataTemp = self.data
+            dataTemp = self.sqlite.find()
             if dataTemp:
                 for item in dataTemp:
-                    info = self.client.publish(self.topic, item)
+                    payload = json.dumps({item[1]:item[2], 'time':str(item[3])})
+                    info = self.client.publish(self.topic, payload)
                     if info.is_published():
-                        self.data.remove(item)
-                        self.pendingData.update(self.data)
+                        self.sqlite.removeById(item[0])
+                        self.isConnected = True
                     else:
-                        logging.error('No se pudo publicar los datos en el servidor')  
+                        # logging.error('No se pudo publicar los datos en el servidor')  
                         self.isConnected = False   
             else:
                 self.isPending = False                       
-    
+
+class SQLite:
+    def __init__(self, nameDB):
+        self.nameDB = nameDB
+        self.con = self.connection(self.nameDB)
+        self.cursor = self.con.cursor()
+
+    def connection(self, nameDB):
+        try:
+            con = sqlite3.connect(nameDB + '.db', check_same_thread = False)
+            return con
+
+        except Error:
+            logging.error(Error.message)
+            print(Error.message)
+    def createTable(self, nameTable, fields):
+        self.nameTable = nameTable
+        self.cursor.execute('create table if not exists ' + self.nameTable + fields)
+        self.con.commit()
+
+    def insert(self, data, names):
+        self.cursor.execute('INSERT INTO '+ names, data)
+        self.con.commit()
+
+    def removeById(self, id):
+        self.cursor.execute('DELETE FROM ' + self.nameTable + ' WHERE id=' + str(id))
+        self.con.commit()
+
+    def find(self):
+        self.cursor.execute('SELECT * FROM ' + self.nameTable)
+        return self.cursor.fetchall()
 
 class Plotter:
     def __init__(self,Figure,ax):
@@ -284,46 +320,7 @@ class Plotter:
         self.ax.set_xlabel('Hora',fontsize = "15")
         self.ax.set_ylabel('x(t)',fontsize = "15")
         self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.1, right = 0.95)
-        self.Fig.draw()
-
-class WBook:
-    def __init__(self, route):
-
-        signals = Signals()
-
-        fileExists = os.path.isfile(route)
-        if fileExists:
-            try:
-                self.workbook = load_workbook(filename= route)
-            except:
-                logging.error('Archivo de respaldo de datos dañado')
-                print('Archivo de respaldo de datos dañado')
-                signals.statusFile = False
-                self.workbook = Workbook()
-        else:
-            self.workbook = Workbook()
-
-class Excel:
-    def __init__(self, wb, titleSheet, head, route, initial = False):
-
-        signals = Signals()
-
-        fileExists = os.path.isfile(route)
-        self.workbook = wb
-
-        if fileExists and signals.statusFile:
-            self.sheet = self.workbook.get_sheet_by_name(titleSheet)
-        else:
-            if initial:
-                self.sheet = self.workbook.active
-                self.sheet.title = titleSheet
-            else:
-                self.sheet = self.workbook.create_sheet(title=titleSheet)  
-            self.sheet.append(head)
-
-    def addRow(self, data):
-        self.sheet.append(data)
-     
+        self.Fig.draw()   
 
 class LocalStorage():
     def __init__(self, route, name):
@@ -363,10 +360,26 @@ class Thread(QThread):
     def stop(self):
         self.threadactive = False
 
+class ThreadForever(QThread):
+
+    def __init__(self, target, every=5):
+        super(ThreadForever,self).__init__()
+        self.threadactive = True
+        self.target = target
+        self.every = every
+
+    def run(self):
+        while self.threadactive:
+            self.target()
+            time.sleep(self.every)
+    
+    def stop(self):
+        self.threadactive = False
+
 @singleton
 class Signals(QObject):
     signalUpdatePrefs = pyqtSignal(str)
-    signalUpdateInputValue = pyqtSignal(float)
+    signalUpdateInputValue = pyqtSignal(str, float)
     signalUpdateGraph = pyqtSignal()
     signalIsLoanding = pyqtSignal(bool)
     signalAlert = pyqtSignal(str)

@@ -71,6 +71,7 @@ class Data:
         # Mqqt
         self.client = Mqtt('secado')
         
+        # Verificar si hay datos pendiendes en un nuevo hilo
         self.threadForever = ThreadForever(target=self.client.verifyPending)
         self.threadForever.start()
     
@@ -104,6 +105,7 @@ class Data:
         self.humGrainService.update(hum, currentTime)
 
     def updatePrefs(self,route):
+        self.sqlite.con.close()
         self.routeData = os.path.abspath(route + '/data')
         self.initSQLite(self.routeData)
         self.initDataService()
