@@ -59,13 +59,12 @@ class Estacion(QMainWindow):
         self.setFocus()
 
     def closeEvent(self, event):
-        
-        self.data.save()
-
         self.reply = QMessageBox.question(None,' ',"¿Realmente desea cerrar la aplicación?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if self.reply == QMessageBox.Yes:
             self.thread.stop()
             self.data.threadForever.stop()
+            self.data.sqlite.con.close()
+            self.data.client.sqlite.con.close()
             event.accept()
         else:
             event.ignore()
@@ -130,7 +129,6 @@ class Thread(QThread):
         schedule.every(4).seconds.do(self.data.env1)
         schedule.every(5).seconds.do(self.data.env2)
         schedule.every(6).seconds.do(self.data.env3)
-        schedule.every(10).seconds.do(self.data.save)
 
         while self.threadactive:
             schedule.run_pending()

@@ -49,14 +49,18 @@ class Data:
 
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         try:
-            self.routeData = os.path.abspath(self.prefs.read()['routeData'] + '/datos.xlsx')
+            self.routeData = os.path.abspath(self.prefs.read()['routeData'])
+            isExist = os.path.exists(self.routeData)
+            if isExist:
+                self.routeData = os.path.abspath(self.routeData + '/data')
+            else:
+                self.routeData = routeDatos + '/data'
         except:
             logging.error('No se pudo encontrar la ruta de almacenamiento de datos en prefs.json')
-            self.routeData = routeDatos + '/datos.xlsx'
+            self.routeData = routeDatos + '/datos.db'
     
         # Inicializaciones para almacenamiento de datos
-        self.wb = WBook(self.routeData).workbook
-        self.initExcel(self.routeData)
+        self.initSQLite(self.routeData)
         self.initDataService()
 
         self.signals = Signals()
@@ -71,18 +75,23 @@ class Data:
         self.threadForever.start()
     
     def initDataService(self):
-        self.envService = DataService( ['T.ambiente', 'H.ambiente'], [self.textTempEnv, self.textHumEnv], self.envExcel, self.numData, ["°C", "%"], 2)
-        self.env1Service = DataService( ['T.zona1', 'H.zona1'], [self.textTemp1, self.textHum1], self.env1Excel, self.numData, ["°C", "%"], 2)
-        self.env2Service = DataService( ['T.zona2', 'H.zona2'], [self.textTemp2, self.textHum2], self.env2Excel, self.numData, ["°C", "%"], 2)
-        self.env3Service = DataService( ['T.zona3', 'H.zona3'], [self.textTemp3, self.textHum3], self.env3Excel, self.numData, ["°C", "%"], 2)
-        self.humGrainService = DataService( 'H.grano', self.textHumGrain, self.humGrainExcel, self.numData, "%")
+        namesEnv = '(time, temperatura, humedad)  VALUES(?, ?, ?)'
+        namesHG = '(time, humedad)  VALUES(?, ?)'
+        self.envService = DataService( self.sqlite, 'Ambiente', namesEnv, ['T.ambiente', 'H.ambiente'], [self.textTempEnv, self.textHumEnv], self.numData, ["°C", "%"], 2)
+        self.env1Service = DataService( self.sqlite, 'Zona1', namesEnv, ['T.zona1', 'H.zona1'], [self.textTemp1, self.textHum1], self.numData, ["°C", "%"], 2)
+        self.env2Service = DataService( self.sqlite, 'Zona2', namesEnv, ['T.zona2', 'H.zona2'], [self.textTemp2, self.textHum2], self.numData, ["°C", "%"], 2)
+        self.env3Service = DataService( self.sqlite, 'Zona3', namesEnv, ['T.zona3', 'H.zona3'], [self.textTemp3, self.textHum3], self.numData, ["°C", "%"], 2)
+        self.humGrainService = DataService( self.sqlite, 'HGrano', namesHG, 'H.grano', self.textHumGrain, self.numData, "%")
 
-    def initExcel(self, route):
-        self.envExcel = Excel(wb = self.wb, titleSheet='Ambiente', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route, initial = True)
-        self.env1Excel = Excel(wb = self.wb, titleSheet='Zona 1', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
-        self.env2Excel = Excel(wb = self.wb, titleSheet='Zona 2', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
-        self.env3Excel = Excel(wb = self.wb, titleSheet='Zona 3', head = ['Tiempo', 'Temperatura', 'Humedad'], route = route)
-        self.humGrainExcel = Excel(wb = self.wb, titleSheet='Humedad Grano', head = ['Tiempo', 'Humedad Grano'], route = route)
+    def initSQLite(self, route):
+        self.sqlite = SQLite(nameDB = route)
+        fieldsEnv = '(time date, temperatura real, humedad real)'
+        fieldsHG = '(time date, humedad real)'
+        self.sqlite.createTable(nameTable = 'Ambiente', fields = fieldsEnv)
+        self.sqlite.createTable(nameTable = 'Zona1', fields = fieldsEnv)
+        self.sqlite.createTable(nameTable = 'Zona2', fields = fieldsEnv)
+        self.sqlite.createTable(nameTable = 'Zona3', fields = fieldsEnv)
+        self.sqlite.createTable(nameTable = 'HGrano', fields = fieldsHG)
 
     def isLoading(self, loading):
         if loading:
@@ -95,9 +104,8 @@ class Data:
         self.humGrainService.update(hum, currentTime)
 
     def updatePrefs(self,route):
-        self.routeData = os.path.abspath(route + '/datos.xlsx')
-        self.wb = WBook(self.routeData ).workbook
-        self.initExcel(self.routeData )
+        self.routeData = os.path.abspath(route + '/data')
+        self.initSQLite(self.routeData)
         self.initDataService()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
@@ -134,21 +142,14 @@ class Data:
         humidity3 = random.randint(50, 60)
         currentTime = datetime.now()
         self.env3Service.update([temperature3, humidity3], currentTime)
-    
-    def save(self):
-        try:
-            self.wb.save(self.routeData)
-        except:
-            logging.error('Ingrese un ruta correcta para almacenar los datos')
-            print("provider save: Ingrese un ruta correcta para almacenar los datos")
-        self.signals.statusFile = True
             
 
 class DataService:
-    def __init__(self, name, text, excel, numData, units,numVarSensor = 1):
+    def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
+        self.sqlite = sqlite
+        self.namesDB = nameTable + namesDB
         self.name = name
         self.text = text
-        self.excel = excel
         self.numData = numData
         self.numVarSensor = numVarSensor
         self.units = units
@@ -178,16 +179,15 @@ class DataService:
                 self.client.publish(self.name[i],data[i],time)
             datos = [time]
             datos.extend(data)
-            self.excel.addRow(datos)
+            self.sqlite.insert(datos, names = self.namesDB)
         else:
             self.data.append(data)
             if len(self.data) > self.numData:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
-            self.excel.addRow([time, data])
             # Enviar datos al servidor
             self.client.publish(self.name, data, time)
-
+            self.sqlite.insert((time, data), names = self.namesDB)
         # Actualizar grafica  
         self.signals.signalUpdateGraph.emit()
 
@@ -313,43 +313,6 @@ class Plotter:
         self.ax.set_ylabel('x(t)',fontsize = "15")
         self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.1, right = 0.95)
         self.Fig.draw()
-
-class WBook:
-    def __init__(self, route):
-
-        signals = Signals()
-
-        fileExists = os.path.isfile(route)
-        if fileExists:
-            try:
-                self.workbook = load_workbook(filename= route)
-            except:
-                logging.error('Archivo de respaldo de datos dañado')
-                print('Archivo de respaldo de datos dañado')
-                signals.statusFile = False
-                self.workbook = Workbook()
-        else:
-            self.workbook = Workbook()
-
-class Excel:
-    def __init__(self, wb, titleSheet, head, route, initial = False):
-
-        signals = Signals()
-
-        fileExists = os.path.isfile(route)
-        self.workbook = wb
-        if fileExists and signals.statusFile:
-            self.sheet = self.workbook.get_sheet_by_name(titleSheet)
-        else:
-            if initial:
-                self.sheet = self.workbook.active
-                self.sheet.title = titleSheet
-            else:
-                self.sheet = self.workbook.create_sheet(title=titleSheet)  
-            self.sheet.append(head)
-
-    def addRow(self, data):
-        self.sheet.append(data)
             
 class LocalStorage():
     def __init__(self, route, name):
