@@ -10,7 +10,9 @@ from PyQt5.QtWidgets import QMessageBox
 import json
 import logging
 import paho.mqtt.client as mqtt
-import time 
+import time
+import sqlite3
+from sqlite3 import Error 
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -173,7 +175,7 @@ class DataService:
                     self.data[i].pop(0)
                 self.text[i].setText( str(data[i]) +" "+ self.units[i])
                 # Enviar datos al servidor
-                self.client.publish(json.dumps({self.name[i]:data[i], 'time':str(time)}))
+                self.client.publish(self.name[i],data[i],time)
             datos = [time]
             datos.extend(data)
             self.excel.addRow(datos)
@@ -184,7 +186,7 @@ class DataService:
             self.text.setText( str(data) +" "+ self.units)
             self.excel.addRow([time, data])
             # Enviar datos al servidor
-            self.client.publish(json.dumps({self.name:data, 'time':str(time)}))
+            self.client.publish(self.name, data, time)
 
         # Actualizar grafica  
         self.signals.signalUpdateGraph.emit()
@@ -193,14 +195,12 @@ class DataService:
 class Mqtt:
     def __init__(self, clientID):
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
-        self.pendingData = LocalStorage(route=routeDatos, name = 'pending')
         self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
         self.isPending = True
         self.isConnected = False
-        if self.pendingData.read():
-            self.data = self.pendingData.read()
-        else:
-            self.data = []
+        
+        self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
+        self.sqlite.createTable(nameTable = 'pending')
 
         self.signals = Signals()
         try:
@@ -235,14 +235,12 @@ class Mqtt:
         
         self.signals.signalIsLoanding.emit(False)
     
-    def publish(self, payload):
+    def publish(self, name, data, time):
+        payload = json.dumps({name:data,'time':str(time)})
         info = self.client.publish(self.topic, payload)
         if info.is_published() == False:
             # logging.error('No se pudo publicar los datos en el servidor')
-            if self.pendingData.read():
-                self.data = self.pendingData.read()
-            self.data.append(payload)
-            self.pendingData.update(self.data)
+            self.sqlite.insert((name, data, time))
             self.isPending = True
             self.isConnected = False
         else:
@@ -250,19 +248,50 @@ class Mqtt:
     
     def verifyPending(self):
         if self.isPending and self.isConnected:
-            dataTemp = self.data
+            dataTemp = self.sqlite.find()
             if dataTemp:
                 for item in dataTemp:
-                    info = self.client.publish(self.topic, item)
+                    payload = json.dumps({item[1]:item[2], 'time':str(item[3])})
+                    info = self.client.publish(self.topic, payload)
                     if info.is_published():
-                        self.data.remove(item)
-                        self.pendingData.update(self.data)
+                        self.sqlite.removeById(item[0])
                         self.isConnected = True
                     else:
                         # logging.error('No se pudo publicar los datos en el servidor')  
                         self.isConnected = False   
             else:
                 self.isPending = False                       
+
+class SQLite:
+    def __init__(self, nameDB):
+        self.nameDB = nameDB
+        self.con = self.connection(self.nameDB)
+        self.cursor = self.con.cursor()
+
+    def connection(self, nameDB):
+        try:
+            con = sqlite3.connect(nameDB + '.db', check_same_thread = False)
+            return con
+
+        except Error:
+            logging.error(Error)
+            print(Error)
+    def createTable(self, nameTable):
+        self.nameTable = nameTable
+        self.cursor.execute('create table if not exists ' + self.nameTable + '(id integer PRIMARY KEY, name text, value real, time date)')
+        self.con.commit()
+
+    def insert(self, data):
+        self.cursor.execute('INSERT INTO '+ self.nameTable + '(name, value, time) VALUES(?, ?, ?)', data)
+        self.con.commit()
+
+    def removeById(self, id):
+        self.cursor.execute('DELETE FROM ' + self.nameTable + ' WHERE id=' + str(id))
+        self.con.commit()
+
+    def find(self):
+        self.cursor.execute('SELECT * FROM ' + self.nameTable)
+        return self.cursor.fetchall()
 
 class Plotter:
     def __init__(self,Figure,ax):
