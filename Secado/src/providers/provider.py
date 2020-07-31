@@ -200,7 +200,9 @@ class Mqtt:
         self.isConnected = False
         
         self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
-        self.sqlite.createTable(nameTable = 'pending')
+        fields = '(id integer PRIMARY KEY, name text, value real, time date)'
+        self.sqlite.createTable(nameTable = 'pending', fields = fields)
+        self.names = '(name, value, time)'
 
         self.signals = Signals()
         try:
@@ -240,7 +242,7 @@ class Mqtt:
         info = self.client.publish(self.topic, payload)
         if info.is_published() == False:
             # logging.error('No se pudo publicar los datos en el servidor')
-            self.sqlite.insert((name, data, time))
+            self.sqlite.insert((name, data, time), names = self.names)
             self.isPending = True
             self.isConnected = False
         else:
@@ -276,13 +278,13 @@ class SQLite:
         except Error:
             logging.error(Error)
             print(Error)
-    def createTable(self, nameTable):
+    def createTable(self, nameTable, fields):
         self.nameTable = nameTable
-        self.cursor.execute('create table if not exists ' + self.nameTable + '(id integer PRIMARY KEY, name text, value real, time date)')
+        self.cursor.execute('create table if not exists ' + self.nameTable + fields)
         self.con.commit()
 
-    def insert(self, data):
-        self.cursor.execute('INSERT INTO '+ self.nameTable + '(name, value, time) VALUES(?, ?, ?)', data)
+    def insert(self, data, names):
+        self.cursor.execute('INSERT INTO '+ self.nameTable + names + ' VALUES(?, ?, ?)', data)
         self.con.commit()
 
     def removeById(self, id):
