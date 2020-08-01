@@ -111,10 +111,7 @@ class Data:
 
     def updatePrefs(self,route):
         self.routeData = self.verifyRoute(os.path.abspath(route))
-        qmutex.lock()
-        self.sqlite.con.close()
         self.initSQLite(self.routeData)
-        qmutex.unlock()
         self.initDataService()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
