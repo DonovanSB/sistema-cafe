@@ -40,6 +40,7 @@ class Login(QDialog):
         self.widgets()
         
         self.user.setText(os.getenv("USER_ENV"))
+        self.password.setText(os.getenv("PASS_ENV"))
 
         #-- Mostrar Ventana---
         self.show()

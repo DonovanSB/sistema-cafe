@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import random
-from openpyxl import Workbook, load_workbook
 from datetime import datetime
 import matplotlib.dates as dates
 import os
@@ -392,4 +391,3 @@ class Signals(QObject):
     signalAlert = pyqtSignal(str)
 
     statusFile = True
-    dataPending = False

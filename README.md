@@ -21,10 +21,9 @@ python -m pip install matplotlib
 ```
 sudo pip install schedule
 ```
-* openpyxl
-Última versión para Python 2.7
+* SQLite3
 ```
-sudo pip install openpyxl==2.6.4
+sudo apt install sqlite3
 ```
 # Configurar usuario y contraseña en las variables de entorno
 con
