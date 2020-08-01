@@ -284,11 +284,13 @@ class SQLite:
         self.con.commit()
 
     def insert(self, data, names):
-        self.cursor.execute('INSERT INTO '+ names, data)
+        cursor = self.con.cursor()
+        cursor.execute('INSERT INTO '+ names, data)
         self.con.commit()
 
     def removeById(self, id):
-        self.cursor.execute('DELETE FROM ' + self.nameTable + ' WHERE id=' + str(id))
+        cursor = self.con.cursor()
+        cursor.execute('DELETE FROM ' + self.nameTable + ' WHERE id=' + str(id))
         self.con.commit()
 
     def find(self):
