@@ -46,12 +46,8 @@ class Data:
 
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         try:
-            self.routeData = os.path.abspath(self.prefs.read()['routeData'])
-            isExist = os.path.exists(self.routeData)
-            if isExist:
-                self.routeData = os.path.abspath(self.routeData + '/data')
-            else:
-                self.routeData = routeDatos + '/data'
+            route = os.path.abspath(self.prefs.read()['routeData'])
+            self.routeData  = self.verifyRoute(route)
         except:
             logging.error('No se pudo encontrar la ruta de almacenamiento de datos en prefs.json')
             self.routeData = routeDatos + '/datos.db'
@@ -71,6 +67,13 @@ class Data:
         # Verificar si hay datos pendiendes en un nuevo hilo
         self.threadForever = ThreadForever(target=self.client.verifyPending)
         self.threadForever.start()
+
+    def verifyRoute(self,route):
+        if os.path.exists(route):
+            route = os.path.abspath(route + '/data')
+        else:
+            route = routeDatos + '/data'
+        return route
 
     def initDataService(self):
         namesEnv = '(time, temperatura, humedad)  VALUES(?, ?, ?)'
@@ -112,7 +115,7 @@ class Data:
 
     def updatePrefs(self,route):
         self.sqlite.con.close()
-        self.routeData = os.path.abspath(route + '/data')
+        self.routeData = self.verifyRoute(os.path.abspath(route))
         self.initSQLite(self.routeData)
         self.initDataService()
         self.thread = Thread(target = self.client.connect)
@@ -280,8 +283,9 @@ class SQLite:
             return con
 
         except Error:
-            logging.error(Error.message)
-            print(Error.message)
+            logging.error('No se pudo conectar con la base de datos ' + nameDB + '.db')
+            print('No se pudo conectar con la base de datos ' + nameDB + '.db')
+
     def createTable(self, nameTable, fields):
         self.nameTable = nameTable
         self.cursor.execute('create table if not exists ' + self.nameTable + fields)
