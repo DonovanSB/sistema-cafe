@@ -5,7 +5,7 @@ from openpyxl import Workbook, load_workbook
 from datetime import datetime
 import matplotlib.dates as dates
 import os
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
+from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
 from PyQt5.QtWidgets import QMessageBox
 import json
 import logging
@@ -21,6 +21,8 @@ root = os.path.abspath(parent)
 routeDatos = root + '/datos'
 
 logging.basicConfig(filename = root + '/secado.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+qmutex = QMutex()
 
 def singleton(cls):    
     instance = [None]
@@ -279,21 +281,30 @@ class SQLite:
             logging.error(Error.message)
             print(Error.message)
     def createTable(self, nameTable, fields):
+        qmutex.lock()
         self.nameTable = nameTable
         self.cursor.execute('create table if not exists ' + self.nameTable + fields)
         self.con.commit()
+        qmutex.unlock()
 
     def insert(self, data, names):
+        qmutex.lock()
         self.cursor.execute('INSERT INTO '+ names, data)
         self.con.commit()
+        qmutex.unlock()
 
     def removeById(self, id):
+        qmutex.lock()
         self.cursor.execute('DELETE FROM ' + self.nameTable + ' WHERE id=' + str(id))
         self.con.commit()
+        qmutex.unlock()
 
     def find(self):
+        qmutex.lock()
         self.cursor.execute('SELECT * FROM ' + self.nameTable)
-        return self.cursor.fetchall()
+        lista = self.cursor.fetchall()
+        qmutex.unlock()
+        return lista
 
 class Plotter:
     def __init__(self,Figure,ax):
