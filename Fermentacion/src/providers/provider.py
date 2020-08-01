@@ -114,7 +114,6 @@ class Data:
             self.phService.update(value, currentTime)
 
     def updatePrefs(self,route):
-        self.sqlite.con.close()
         self.routeData = self.verifyRoute(os.path.abspath(route))
         self.initSQLite(self.routeData)
         self.initDataService()
