@@ -124,12 +124,24 @@ class Thread(QThread):
         super(Thread,self).__init__()
         self.threadactive = True
         self.data = data
+        self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
+        self.samplingTimes = self.data.verifySamplingTimes()
+        self.signals = provider.Signals()
+        self.signals.signalUpdatePrefs.connect(self.updatedPrefs)
+
+    def updatedPrefs(self):
+        self.samplingTimes = self.data.verifySamplingTimes()
+        schedule.clear()
+        self.stop()
+        time.sleep(0.3)
+        self.threadactive = True
+        self.start()
 
     def run(self):
-        schedule.every(5).seconds.do(self.data.env)
-        schedule.every(10).seconds.do(self.data.temp1)
-        schedule.every(15).seconds.do(self.data.temp2)
-        schedule.every(20).seconds.do(self.data.temp3)
+        schedule.every(int(self.samplingTimes["env"])).seconds.do(self.data.env)
+        schedule.every(int(self.samplingTimes["temp1"])).seconds.do(self.data.temp1)
+        schedule.every(int(self.samplingTimes["temp2"])).seconds.do(self.data.temp2)
+        schedule.every(int(self.samplingTimes["temp3"])).seconds.do(self.data.temp3)
         
         while self.threadactive:
             schedule.run_pending()

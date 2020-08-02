@@ -1,1 +1,1 @@
-{"topic": "estacion/estacion", "routeData": "/media/donovan/Datos/Datos Donovan/Universidad/UNIVERSIDAD/Monitoria IoT/Estacion Cafe/Estacion/datos", "server": "13.59.182.127"}
+{"topic": "estacion/estacion", "samplingTimes": {"direction": "10", "speed": "5", "rain": "20", "env": "10", "irrad": "10"}, "routeData": "/media/donovan/Datos/Datos Donovan/Universidad/UNIVERSIDAD/Monitoria IoT/Estacion Cafe/Estacion/datos", "server": "13.59.182.127"}

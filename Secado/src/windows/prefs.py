@@ -95,10 +95,13 @@ class Preferencias(QDialog):
         for i in range(numSensors):
             self.inputsSensors.append(QLineEdit())
         
-        if self.preferences["samplingTimes"]:
-            samplingTimes = self.preferences["samplingTimes"]
-            for i in range(numSensors):
-                self.inputsSensors[i].setText(samplingTimes[self.savedNames[i]])
+        try: 
+            if self.preferences["samplingTimes"]:
+                samplingTimes = self.preferences["samplingTimes"]
+                for i in range(numSensors):
+                    self.inputsSensors[i].setText(samplingTimes[self.savedNames[i]])
+        except:
+            print('No se encontraron tiempos de muestreo en las preferencias del usuario')
 
         gridTS = QGridLayout()
         for i in range(numSensors):

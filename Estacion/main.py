@@ -122,13 +122,25 @@ class Thread(QThread):
         super(Thread,self).__init__()
         self.data = data
         self.threadactive = True
+        self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
+        self.samplingTimes = self.data.verifySamplingTimes()
+        self.signals = provider.Signals()
+        self.signals.signalUpdatePrefs.connect(self.updatedPrefs)
+
+    def updatedPrefs(self):
+        self.samplingTimes = self.data.verifySamplingTimes()
+        schedule.clear()
+        self.stop()
+        time.sleep(0.3)
+        self.threadactive = True
+        self.start()
 
     def run(self):
-        schedule.every(5).seconds.do(self.data.env)
-        schedule.every(5).seconds.do(self.data.irrad)
-        schedule.every(5).seconds.do(self.data.windSpeed)
-        schedule.every(5).seconds.do(self.data.windDirection)
-        schedule.every(10).seconds.do(self.data.rain)
+        schedule.every(int(self.samplingTimes["env"])).seconds.do(self.data.env)
+        schedule.every(int(self.samplingTimes["irrad"])).seconds.do(self.data.irrad)
+        schedule.every(int(self.samplingTimes["speed"])).seconds.do(self.data.windSpeed)
+        schedule.every(int(self.samplingTimes["direction"])).seconds.do(self.data.windDirection)
+        schedule.every(int(self.samplingTimes["rain"])).seconds.do(self.data.rain)
         
         while self.threadactive :
             schedule.run_pending()

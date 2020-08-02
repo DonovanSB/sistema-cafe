@@ -76,6 +76,14 @@ class Data:
             route = routeDatos + '/data'
         return route
 
+    def verifySamplingTimes(self):
+        try:
+            samplingTimes = self.prefs.read()["samplingTimes"]
+        except:
+            logging.error("Tiempos de muestreo no encontrados")
+            samplingTimes = {"env":10,"temp1":5,"temp2":5,"temp3":5}
+        return samplingTimes
+
     def initDataService(self):
         namesEnv = '(time, temperatura, humedad)  VALUES(?, ?, ?)'
         namesTemp = '(time, temperatura)  VALUES(?, ?)'
@@ -331,7 +339,7 @@ class Plotter:
         self.ax.set_title(title,fontsize = "18", fontweight='bold')
         self.ax.set_xlabel('Hora',fontsize = "15")
         self.ax.set_ylabel('x(t)',fontsize = "15")
-        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.1, right = 0.95)
+        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.1, right = 0.95)
         self.Fig.draw()   
 
 class LocalStorage():

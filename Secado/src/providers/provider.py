@@ -333,7 +333,7 @@ class Plotter:
         self.ax.set_title(title,fontsize = "18", fontweight='bold')
         self.ax.set_xlabel('Hora',fontsize = "15")
         self.ax.set_ylabel('x(t)',fontsize = "15")
-        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.2, left=0.1, right = 0.95)
+        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
         self.Fig.draw()
             
 class LocalStorage():
