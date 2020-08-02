@@ -78,6 +78,14 @@ class Data:
         else:
             route = routeDatos + '/data'
         return route
+    
+    def verifySamplingTimes(self):
+        try:
+            samplingTimes = self.prefs.read()["samplingTimes"]
+        except:
+            logging.error("Tiempos de muestreo no encontrados")
+            samplingTimes = {"env":10,"env1":10,"env2":10,"env3":10}
+        return samplingTimes
 
     def initDataService(self):
         namesEnv = '(time, temperatura, humedad)  VALUES(?, ?, ?)'
