@@ -5,6 +5,7 @@ route = os.path.abspath(parent)
 sys.path.append(route + "/widgets")
 sys.path.append(route + "/providers")
 from PyQt5.QtWidgets import QScrollArea, QWidget, QLineEdit, QFrame, QHBoxLayout, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QDialog
+from PyQt5.QtCore import Qt
 import provider
 import widgets
 
@@ -117,8 +118,9 @@ class Preferencias(QDialog):
         grid.addWidget(frameButtons,3,1)
         
         scroll = QScrollArea()
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setWidgetResizable(True)
-        scroll.setMinimumHeight(530)
+        scroll.setMinimumHeight(540)
         widget = QWidget()
         widget.setLayout(grid)
         scroll.setWidget(widget)
