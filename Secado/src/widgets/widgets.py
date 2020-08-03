@@ -6,7 +6,7 @@ parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.
 route = os.path.abspath(parent)
 sys.path.append(route + "/src/windows")
 from PyQt5.QtWidgets import QFrame, QLineEdit, QPushButton, QGroupBox, QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget, QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 import matplotlib.dates as dates
 import matplotlib.pyplot as plt 
@@ -27,13 +27,16 @@ class Shadow(QGraphicsDropShadowEffect):
         self.setYOffset(3)
         self.setColor(QColor(0,0,0,100))
 
-class RoundedContainer(QFrame):
+class RoundedContainerInput(QFrame):
     def __init__(self,title,iconName,initialValue):
-        super(RoundedContainer,self).__init__()
+        super(RoundedContainerInput,self).__init__()
+        # Estilo del Frame
+        self.name = title
         # Estilo del Frame
         self.setStyleSheet("background-color: white; border-radius:10px; margin:0px 0px 0px 0px")
         self.setFixedHeight(200)
-        self.setGraphicsEffect(Shadow())
+        shadow = Shadow()
+        self.setGraphicsEffect(shadow)
         
         #--- Titulo----
         labelTitle = QLabel(title)
@@ -52,16 +55,18 @@ class RoundedContainer(QFrame):
         self.text.setAlignment(Qt.AlignCenter)
         self.text.setStyleSheet("background: rgba(0,0,0,0);color: black; font: 20px; margin: 0px 0px 0px 0px")
 
-        self.styleBottoms = "QPushButton {background-color:#0d47a1; color: white; border-radius: 5px;font: 15px bold; margin: 5px 5px 5px 5px ; padding: 10px;}" "QPushButton:hover { background-color: #5472d3}" "QPushButton:pressed { background-color: #002171}"
-        buttomIngresar = QPushButton("Ingresar")
-        buttomIngresar.setStyleSheet(self.styleBottoms)
-        buttomIngresar.clicked.connect(self.loadValue)
+        self.styleBottoms = "QPushButton {background-color:#0d47a1; color: white; border-radius: 20px;font: 15px bold; margin: 0px 5px 5px 5px ; padding: 10px;}" "QPushButton:hover { background-color: #5472d3}" "QPushButton:pressed { background-color: #002171}"
+        buttonIngresar = QPushButton()
+        buttonIngresar.setIcon(QIcon(rutaAssets + "dialpad.svg"))
+        buttonIngresar.setIconSize(QSize(30,30))
+        buttonIngresar.setStyleSheet(self.styleBottoms)
+        buttonIngresar.clicked.connect(self.loadValue)
 
         grid = QGridLayout(self)
-        grid.addWidget(labelTitle,0,0,1,2)
-        grid.addWidget(icon,1,0)
-        grid.addWidget(buttomIngresar,1,1)
-        grid.addWidget(self.text,2,0)
+        grid.addWidget(labelTitle,0,0,1,3)
+        grid.addWidget(icon,1,0,1,3)
+        grid.addWidget(self.text,2,0,1,3)
+        grid.addWidget(buttonIngresar,3,1)
         grid.setContentsMargins(0,0,0,0)
     
     def loadValue(self):

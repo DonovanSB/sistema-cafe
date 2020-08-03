@@ -87,17 +87,17 @@ class RoundedContainerInput(QFrame):
         self.text.setStyleSheet("background: rgba(0,0,0,0);color: black; font: 20px; margin: 0px 0px 0px 0px")
 
         self.styleBottoms = "QPushButton {background-color:#0d47a1; color: white; border-radius: 20px;font: 15px bold; margin: 0px 5px 5px 5px ; padding: 10px;}" "QPushButton:hover { background-color: #5472d3}" "QPushButton:pressed { background-color: #002171}"
-        buttomIngresar = QPushButton()
-        buttomIngresar.setIcon(QIcon(rutaAssets + "dialpad.svg"))
-        buttomIngresar.setIconSize(QSize(30,30))
-        buttomIngresar.setStyleSheet(self.styleBottoms)
-        buttomIngresar.clicked.connect(self.loadValue)
+        buttonIngresar = QPushButton()
+        buttonIngresar.setIcon(QIcon(rutaAssets + "dialpad.svg"))
+        buttonIngresar.setIconSize(QSize(30,30))
+        buttonIngresar.setStyleSheet(self.styleBottoms)
+        buttonIngresar.clicked.connect(self.loadValue)
 
         grid = QGridLayout(self)
         grid.addWidget(labelTitle,0,0,1,3)
         grid.addWidget(icon,1,0,1,3)
         grid.addWidget(self.text,2,0,1,3)
-        grid.addWidget(buttomIngresar,3,1)
+        grid.addWidget(buttonIngresar,3,1)
         grid.setContentsMargins(0,0,0,0)
     
     def loadValue(self):

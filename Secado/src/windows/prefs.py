@@ -4,7 +4,7 @@ parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/widgets")
 sys.path.append(route + "/providers")
-from PyQt5.QtWidgets import QLineEdit, QFrame, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog
+from PyQt5.QtWidgets import QScrollArea, QWidget, QLineEdit, QFrame, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog
 import provider
 import widgets
 
@@ -109,11 +109,22 @@ class Preferencias(QDialog):
             gridTS.addWidget(self.inputsSensors[i],i,1)
         groupboxTS.setLayout(gridTS)
 
-        grid = QGridLayout(self)
+        grid = QGridLayout()
         grid.addWidget(groupboxServer,0,0,1,2)
         grid.addWidget(groupboxStorage,1,0,1,2)
         grid.addWidget(groupboxTS,2,0)
         grid.addWidget(frameButtons,3,1)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(530)
+        widget = QWidget()
+        widget.setLayout(grid)
+        scroll.setWidget(widget)
+        vbox = QVBoxLayout()
+        vbox.addWidget(scroll)
+        vbox.setContentsMargins(0,0,0,0)
+        self.setLayout(vbox)
 
     def closePreferencias(self):
         self.close()

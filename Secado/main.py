@@ -84,7 +84,7 @@ class Estacion(QMainWindow):
         self.zone1 = widgets.EnvironmentWidget("Zona 1","15 °C", "50 %")
         self.zone2 = widgets.EnvironmentWidget("Zona 2","17 °C", "50 %")
         self.zone3 = widgets.EnvironmentWidget("Zona 3","17 °C", "50 %")
-        self.humGrain = widgets.RoundedContainer("Humedad Grano","humedadpurple.svg","50 %")
+        self.humGrain = widgets.RoundedContainerInput("Humedad Grano","humedadpurpleSmall.svg","50 %")
 
         # Menu de visuzalización
         self.menuVis = widgets.MenuVisualizacion()
