@@ -328,23 +328,6 @@ class Plotter:
         self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
         self.Fig.draw()
 
-class WBook:
-    def __init__(self, route):
-
-        signals = Signals()
-
-        fileExists = os.path.isfile(route)
-        if fileExists:
-            try:
-                self.workbook = load_workbook(filename= route)
-            except:
-                logging.error('Archivo de respaldo de datos dañado')
-                print('Archivo de respaldo de datos dañado')
-                signals.statusFile = False
-                self.workbook = Workbook()
-        else:
-            self.workbook = Workbook()
-
 class LocalStorage():
     def __init__(self, route, name):
         self.optionsServer = []
