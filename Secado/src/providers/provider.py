@@ -308,7 +308,7 @@ class SQLite:
 
     def find(self):
         qmutex.lock()
-        self.cursor.execute('SELECT * FROM ' + self.nameTable)
+        self.cursor.execute('SELECT * FROM ' + self.nameTable + ' LIMIT 500')
         lista = self.cursor.fetchall()
         qmutex.unlock()
         return lista
