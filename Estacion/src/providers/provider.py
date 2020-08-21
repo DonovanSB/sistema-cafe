@@ -240,8 +240,6 @@ class Mqtt:
         payload = json.dumps({name:data,'time':str(timeData)})
         info = self.client.publish(self.topic, payload)
         time.sleep(0.1)
-        print('Publish', info.is_published())
-        print('Connected', self.client.is_connected())
         if info.is_published() == False:
             # logging.error('No se pudo publicar los datos en el servidor')
             self.sqlite.insert((name, data, timeData), names = self.names)
