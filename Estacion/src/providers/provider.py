@@ -110,6 +110,7 @@ class Data:
         self.routeData = self.verifyRoute(os.path.abspath(route))
         self.initSQLite(self.routeData)
         self.initDataService()
+        self.client.client.loop_stop()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
     
@@ -201,7 +202,6 @@ class Mqtt:
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
         self.isPending = True
-        self.isConnected = False
         
         self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
         self.nameTable = 'pending'
@@ -219,48 +219,43 @@ class Mqtt:
         # Conectar en segundo plano
         self.thread = Thread(target = self.connect)
         self.thread.start()
-
+        
     def connect(self):
         self.signals.signalIsLoanding.emit(True)
         try:
             self.brokerAddress = self.prefs.read()['server']
+            print(self.brokerAddress)
         except:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
             self.client.connect(self.brokerAddress, port=1884)
-            self.isConnected = True
         except:
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
-            self.isConnected = False
         
         self.signals.signalIsLoanding.emit(False)
+        self.client.loop_start()
     
-    def publish(self, name, data, time):
-        payload = json.dumps({name:data,'time':str(time)})
+    def publish(self, name, data, timeData):
+        payload = json.dumps({name:data,'time':str(timeData)})
         info = self.client.publish(self.topic, payload)
+        time.sleep(0.1)
         if info.is_published() == False:
             # logging.error('No se pudo publicar los datos en el servidor')
-            self.sqlite.insert((name, data, time), names = self.names)
+            self.sqlite.insert((name, data, timeData), names = self.names)
             self.isPending = True
-            self.isConnected = False
-        else:
-            self.isConnected = True
     
     def verifyPending(self):
-        if self.isPending and self.isConnected:
+        if self.isPending and self.client.is_connected():
             dataTemp = self.sqlite.find()
             if dataTemp:
                 for item in dataTemp:
                     payload = json.dumps({item[1]:item[2], 'time':str(item[3])})
                     info = self.client.publish(self.topic, payload)
+                    time.sleep(0.1)
                     if info.is_published():
-                        self.sqlite.removeById(item[0])
-                        self.isConnected = True
-                    else:
-                        # logging.error('No se pudo publicar los datos en el servidor')  
-                        self.isConnected = False   
+                        self.sqlite.removeById(item[0]) 
             else:
                 self.isPending = False                            
 
@@ -357,14 +352,10 @@ class Thread(QThread):
 
     def __init__(self, target):
         super(Thread,self).__init__()
-        self.threadactive = True
         self.target = target
 
     def run(self):
         self.target()
-    
-    def stop(self):
-        self.threadactive = False
 
 class ThreadForever(QThread):
 
