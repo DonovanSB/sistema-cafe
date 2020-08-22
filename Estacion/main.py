@@ -37,6 +37,7 @@ class Estacion(QMainWindow):
         self.signals = provider.Signals()
         self.signals.signalUpdateGraph.connect(self.updateGraph)
         self.signals.signalAlert.connect(self.alerts)
+        self.signals.signalMessages.connect(self.messages)
 
         #---Crear Widgets---
         self.createWidgets()
@@ -69,6 +70,9 @@ class Estacion(QMainWindow):
 
     def alerts(self, message):
         QMessageBox.critical(None,'Alerta',message, QMessageBox.Ok)
+
+    def messages(self, message):
+        self.menuBar.state.setText(message)
 
     def centerWindow(self):
         S_Screen = QDesktopWidget().availableGeometry().center()

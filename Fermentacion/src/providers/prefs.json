@@ -1,1 +1,1 @@
-{"topic": "estacion/fermentacion", "samplingTimes": {"temp3": "5", "temp2": "5", "temp1": "5", "env": "10"}, "routeData": "/media/donovan/Datos/Datos Donovan/Universidad/UNIVERSIDAD/Monitoria IoT/Estacion Cafe/Fermentacion/datos", "server": "13.59.182.127"}
+{"topic": "estacion/fermentacion", "samplingTimes": {"temp3": "5", "temp2": "5", "temp1": "5", "env": "10", "temp4": "5"}, "routeData": "/media/donovan/Datos/Datos Donovan/Universidad/UNIVERSIDAD/Monitoria IoT/Estacion Cafe/Fermentacion/datos", "server": "13.59.182.127"}

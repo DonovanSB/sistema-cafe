@@ -37,13 +37,14 @@ class Estacion(QMainWindow):
         self.signals = provider.Signals()
         self.signals.signalUpdateGraph.connect(self.updateGraph)
         self.signals.signalAlert.connect(self.alerts)
+        self.signals.signalMessages.connect(self.messages)
         
         #---Crear Widgets---
         self.createWidgets()
 
         #--- Inicio de Instacias de providers
         self.plot = provider.Plotter(self.graph.FIG,self.graph.ax1)
-        self.data = provider.Data(self.loading, self.environment.tempValue,self.environment.humValue,self.temperature1.text,self.temperature2.text,self.temperature3.text,self.refractometer.text,self.phWidget.text)
+        self.data = provider.Data(self.loading, self.environment.tempValue,self.environment.humValue,self.temperature1.text,self.temperature2.text,self.temperature3.text,self.temperature4.text,self.refractometer.text,self.phWidget.text)
         self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
 
         #Señal para actualizar Datos servidor
@@ -72,6 +73,9 @@ class Estacion(QMainWindow):
 
     def alerts(self, message):
         QMessageBox.critical(None,'Alerta',message, QMessageBox.Ok)
+
+    def messages(self, message):
+        self.menuBar.state.setText(message)
     
     def centerWindow(self):
         S_Screen = QDesktopWidget().availableGeometry().center()
@@ -84,6 +88,7 @@ class Estacion(QMainWindow):
         self.temperature1 = widgets.RoundedContainer("Temp 1","temperaturayellow.svg","18.23 °C")
         self.temperature2 = widgets.RoundedContainer("Temp 2","temperaturayellow.svg","20.15 °C")
         self.temperature3 = widgets.RoundedContainer("Temp 3","temperaturayellow.svg","22.13 °C")
+        self.temperature4 = widgets.RoundedContainer("Temp 4","temperaturayellow.svg","21.13 °C")
         self.refractometer = widgets.RoundedContainerInput("Brix","refractometrosmall.png","50.25 Bx")
         self.phWidget = widgets.RoundedContainerInput("PH","ph.svg","7")
 
@@ -104,11 +109,12 @@ class Estacion(QMainWindow):
         gridLayout.addWidget(self.temperature1,0,1)
         gridLayout.addWidget(self.temperature2,0,2)
         gridLayout.addWidget(self.temperature3,0,3)
-        gridLayout.addWidget(self.refractometer,0,4)
-        gridLayout.addWidget(self.phWidget,0,5)
+        gridLayout.addWidget(self.temperature4,0,4)
+        gridLayout.addWidget(self.refractometer,0,5)
+        gridLayout.addWidget(self.phWidget,0,6)
         gridLayout.addWidget(self.menuVis,1,0)
-        gridLayout.addWidget(self.graph,1,1,1,5)
-        gridLayout.addWidget(self.toolbarFig,2,0,1,6)
+        gridLayout.addWidget(self.graph,1,1,1,6)
+        gridLayout.addWidget(self.toolbarFig,2,0,1,7)
         self.setCentralWidget(widgetGrid)
 
         self.loading = widgets.Loading(self)
@@ -142,6 +148,7 @@ class Thread(QThread):
         schedule.every(int(self.samplingTimes["temp1"])).seconds.do(self.data.temp1)
         schedule.every(int(self.samplingTimes["temp2"])).seconds.do(self.data.temp2)
         schedule.every(int(self.samplingTimes["temp3"])).seconds.do(self.data.temp3)
+        schedule.every(int(self.samplingTimes["temp4"])).seconds.do(self.data.temp4)
         
         while self.threadactive:
             schedule.run_pending()

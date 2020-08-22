@@ -6,7 +6,7 @@ parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.
 route = os.path.abspath(parent)
 sys.path.append(route + "/src/providers")
 sys.path.append(route + "/src/windows")
-from PyQt5.QtWidgets import QFrame, QLineEdit, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout,QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
+from PyQt5.QtWidgets import QHBoxLayout, QFrame, QLineEdit, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout,QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 import matplotlib.dates as dates
@@ -179,7 +179,7 @@ class MenuVisualizacion(QFrame):
         #---Lista--
         self.listaVariables = QComboBox()
         self.listaVariables.setStyleSheet("background:#5472d3;color:black; font:18px; padding: 5px 0px 5px 10px; selection-background-color: #0d47a1; margin: 0px 0px 0px 10px; border-radius:10px")
-        self.sensores = ["Temperatura R","Humedad R","Temperatura 1", "Temperatura 2", "Temperatura 3","Brix", "PH"]
+        self.sensores = ["Temperatura R","Humedad R","Temperatura 1", "Temperatura 2", "Temperatura 3", "Temperatura 4", "Brix", "PH"]
         self.listaVariables.addItems(self.sensores)
 
         box = QLabel("")
@@ -196,6 +196,14 @@ class MenuBar:
     def __init__(self,menuBar):
         self.menuBar = menuBar
         self.menuBar.setStyleSheet("background: #002171; color:white") #263238
+        
+        # Estado de la aplicacion
+        self.state = QLabel()
+        self.state.setStyleSheet('font: 15px')
+        hbox = QHBoxLayout(self.menuBar)
+        hbox.addWidget(self.state)
+        hbox.setAlignment(Qt.AlignCenter)
+        
         archivoMenu = self.menuBar.addMenu('Archivo')
         preferenciasAction = QAction('Preferencias',self.menuBar, triggered=self.showDialog)
         archivoMenu.addAction(preferenciasAction)

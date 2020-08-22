@@ -5,7 +5,7 @@ import os
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/src/windows")
-from PyQt5.QtWidgets import QFrame, QLineEdit, QPushButton, QGroupBox, QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget, QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
+from PyQt5.QtWidgets import QHBoxLayout, QFrame, QLineEdit, QPushButton, QGroupBox, QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget, QComboBox, QAction, QDialog, QGraphicsDropShadowEffect
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 import matplotlib.dates as dates
@@ -168,6 +168,14 @@ class MenuBar:
     def __init__(self,menuBar):
         self.menuBar = menuBar
         self.menuBar.setStyleSheet("background: #002171; color:white") #263238
+
+        # Estado de la aplicacion
+        self.state = QLabel()
+        self.state.setStyleSheet('font: 15px')
+        hbox = QHBoxLayout(self.menuBar)
+        hbox.addWidget(self.state)
+        hbox.setAlignment(Qt.AlignCenter)
+
         archivoMenu = self.menuBar.addMenu('Archivo')
         preferenciasAction = QAction('Preferencias',self.menuBar, triggered=self.showDialog)
         archivoMenu.addAction(preferenciasAction)

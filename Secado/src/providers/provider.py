@@ -120,7 +120,6 @@ class Data:
         self.routeData = self.verifyRoute(os.path.abspath(route))
         self.initSQLite(self.routeData)
         self.initDataService()
-        self.client.client.loop_stop()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
         
@@ -225,23 +224,36 @@ class Mqtt:
             logging.error('No se encontró topic en prefs.json')
             self.topic = 'estacion/secado'
 
+        self.client.on_connect = self.onConnect
+        self.client.on_disconnect = self.onDisconnect
+
         # Conectar en segundo plano
         self.thread = Thread(target = self.connect)
         self.thread.start()
+
+    def onConnect(self, client, userdata, flags, rc):
+        if rc == 0:
+            self.signals.signalMessages.emit('En Linea')
+        else:
+            self.signals.signalMessages.emit('Desconectado')
+
+    def onDisconnect(self, client, userdata, rc):
+        self.signals.signalMessages.emit('Desconectado')
         
     def connect(self):
         self.signals.signalIsLoanding.emit(True)
+        self.signals.signalMessages.emit('Desconectado')
         try:
             self.brokerAddress = self.prefs.read()['server']
         except:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            self.client.connect(self.brokerAddress, port=1884)
+            self.client.connect(self.brokerAddress, port=1884, keepalive=30)    
         except:
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
-        
+
         self.signals.signalIsLoanding.emit(False)
         self.client.loop_start()
     
@@ -265,7 +277,7 @@ class Mqtt:
                     if info.is_published():
                         self.sqlite.removeById(item[0]) 
             else:
-                self.isPending = False                       
+                self.isPending = False                    
 
 class SQLite:
     def __init__(self, nameDB):
@@ -391,5 +403,6 @@ class Signals(QObject):
     signalUpdateGraph = pyqtSignal()
     signalIsLoanding = pyqtSignal(bool)
     signalAlert = pyqtSignal(str)
+    signalMessages = pyqtSignal(str)
 
     statusFile = True

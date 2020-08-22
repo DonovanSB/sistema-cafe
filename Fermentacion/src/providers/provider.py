@@ -32,7 +32,7 @@ def singleton(cls):
     return wrapper
 
 class Data:
-    def __init__(self,loading,textTempR,textHumR,textTemp1,textTemp2,textTemp3,textBrix,textPh):
+    def __init__(self,loading,textTempR,textHumR,textTemp1,textTemp2,textTemp3,textTemp4,textBrix,textPh):
         
         self.loading = loading
         self.textTempR = textTempR
@@ -40,6 +40,7 @@ class Data:
         self.textTemp1 = textTemp1
         self.textTemp2 = textTemp2
         self.textTemp3 = textTemp3
+        self.textTemp4 = textTemp4
         self.textBrix  = textBrix
         self.textPh    = textPh
 
@@ -81,7 +82,7 @@ class Data:
             samplingTimes = self.prefs.read()["samplingTimes"]
         except:
             logging.error("Tiempos de muestreo no encontrados")
-            samplingTimes = {"env":10,"temp1":5,"temp2":5,"temp3":5}
+            samplingTimes = {"env":10,"temp1":5,"temp2":5,"temp3":5,"temp4":5}
         return samplingTimes
 
     def initDataService(self):
@@ -93,6 +94,7 @@ class Data:
         self.temp1Service = DataService( self.sqlite, 'Temperatura1', namesTemp, 'Temp1', self.textTemp1, self.numData, "°C")
         self.temp2Service = DataService( self.sqlite, 'Temperatura2', namesTemp, 'Temp2', self.textTemp2, self.numData, "°C")
         self.temp3Service = DataService( self.sqlite, 'Temperatura3', namesTemp, 'Temp3', self.textTemp3, self.numData, "°C")
+        self.temp4Service = DataService( self.sqlite, 'Temperatura4', namesTemp, 'Temp4', self.textTemp4, self.numData, "°C")
         self.brixService = DataService( self.sqlite, 'Brix', namesBrix, 'Brix', self.textBrix, self.numData, "Bx")
         self.phService = DataService( self.sqlite, 'PH', namesPH, 'ph', self.textPh, self.numData, "")
 
@@ -106,6 +108,7 @@ class Data:
         self.sqlite.createTable(nameTable = 'Temperatura1', fields = fieldsTemp)
         self.sqlite.createTable(nameTable = 'Temperatura2', fields = fieldsTemp)
         self.sqlite.createTable(nameTable = 'Temperatura3', fields = fieldsTemp)
+        self.sqlite.createTable(nameTable = 'Temperatura4', fields = fieldsTemp)
         self.sqlite.createTable(nameTable = 'Brix', fields = fieldsBrix)
         self.sqlite.createTable(nameTable = 'PH', fields = fieldsPH)
 
@@ -126,16 +129,15 @@ class Data:
         self.routeData = self.verifyRoute(os.path.abspath(route))
         self.initSQLite(self.routeData)
         self.initDataService()
-        self.client.client.loop_stop()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
 
     def getData(self, index):
-        datos= [self.envService.data[0], self.envService.data[1], self.temp1Service.data, self.temp2Service.data, self.temp3Service.data, self.brixService.data, self.phService.data]     
+        datos= [self.envService.data[0], self.envService.data[1], self.temp1Service.data, self.temp2Service.data, self.temp3Service.data, self.temp4Service.data, self.brixService.data, self.phService.data]     
         return datos[index]
     
     def getTime(self, index):
-        time = [self.envService.time, self.envService.time, self.temp1Service.time, self.temp2Service.time, self.temp3Service.time, self.brixService.time, self.phService.time]
+        time = [self.envService.time, self.envService.time, self.temp1Service.time, self.temp2Service.time, self.temp3Service.time, self.temp4Service.time, self.brixService.time, self.phService.time]
         return time[index]
 
     #  ************** Lectura, visualización y almacenamiento ************
@@ -163,6 +165,12 @@ class Data:
         temperature = random.randint(18, 25)
         currentTime = datetime.now()
         self.temp3Service.update(temperature, currentTime)
+    
+    def temp4(self):
+        # Leer Datos
+        temperature = random.randint(18, 25)
+        currentTime = datetime.now()
+        self.temp4Service.update(temperature, currentTime)
             
 class DataService:
     def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
@@ -231,23 +239,36 @@ class Mqtt:
             logging.error('No se encontró topic en prefs.json')
             self.topic = 'estacion/fermentacion'
 
+        self.client.on_connect = self.onConnect
+        self.client.on_disconnect = self.onDisconnect
+
         # Conectar en segundo plano
         self.thread = Thread(target = self.connect)
         self.thread.start()
+
+    def onConnect(self, client, userdata, flags, rc):
+        if rc == 0:
+            self.signals.signalMessages.emit('En Linea')
+        else:
+            self.signals.signalMessages.emit('Desconectado')
+
+    def onDisconnect(self, client, userdata, rc):
+        self.signals.signalMessages.emit('Desconectado')
         
     def connect(self):
         self.signals.signalIsLoanding.emit(True)
+        self.signals.signalMessages.emit('Desconectado')
         try:
             self.brokerAddress = self.prefs.read()['server']
         except:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            self.client.connect(self.brokerAddress, port=1884)
+            self.client.connect(self.brokerAddress, port=1884, keepalive=30)    
         except:
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
-        
+
         self.signals.signalIsLoanding.emit(False)
         self.client.loop_start()
     
@@ -397,5 +418,6 @@ class Signals(QObject):
     signalUpdateGraph = pyqtSignal()
     signalIsLoanding = pyqtSignal(bool)
     signalAlert = pyqtSignal(str)
+    signalMessages = pyqtSignal(str)
 
     statusFile = True

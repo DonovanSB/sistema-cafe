@@ -87,8 +87,8 @@ class Preferencias(QDialog):
         # Tiempos de muestreo
         groupboxTS = QGroupBox("Tiempos de muestreo (segundos)", self)
 
-        self.namesSensors = ["Ambiente", "Temperatura 1", "Temperatura 2", "Temperatura 3"]
-        self.savedNames = ["env","temp1","temp2","temp3"]
+        self.namesSensors = ["Ambiente", "Temperatura 1", "Temperatura 2", "Temperatura 3", "Temperatura 4"]
+        self.savedNames = ["env","temp1","temp2","temp3","temp4"]
         numSensors = len(self.namesSensors)
         labelsSensors = []
         for name in self.namesSensors:
