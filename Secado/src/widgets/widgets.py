@@ -171,7 +171,6 @@ class MenuBar:
 
         # Estado de la aplicacion
         self.state = QLabel()
-        self.state.setStyleSheet('font-weight:bold')
         hbox = QHBoxLayout(self.menuBar)
         hbox.addWidget(self.state)
         hbox.setAlignment(Qt.AlignCenter)
