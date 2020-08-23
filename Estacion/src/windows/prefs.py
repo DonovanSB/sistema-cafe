@@ -139,5 +139,5 @@ class Preferencias(QDialog):
             samplingTimes.update({self.savedNames[i]: self.inputsSensors[i].text()})
         dataJson = {"server":self.server.text(),"topic":self.topic.text(),"routeData":self.routeData.text(), "samplingTimes": samplingTimes}
         self.prefs.update(dataJson)
-        self.signals.signalUpdatePrefs.emit(self.routeData.text())
         self.close()
+        self.signals.signalUpdatePrefs.emit(self.routeData.text())

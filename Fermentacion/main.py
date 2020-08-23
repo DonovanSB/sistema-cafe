@@ -139,7 +139,8 @@ class Thread(QThread):
         self.samplingTimes = self.data.verifySamplingTimes()
         schedule.clear()
         self.stop()
-        time.sleep(0.3)
+        while self.isRunning():
+            pass
         self.threadactive = True
         self.start()
 

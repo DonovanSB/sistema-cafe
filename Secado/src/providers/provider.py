@@ -233,9 +233,11 @@ class Mqtt:
 
     def onConnect(self, client, userdata, flags, rc):
         if rc == 0:
-            self.signals.signalMessages.emit('En Linea')
+            self.signals.signalMessages.emit('En línea')
         else:
             self.signals.signalMessages.emit('Desconectado')
+        
+        self.signals.signalIsLoanding.emit(False)
 
     def onDisconnect(self, client, userdata, rc):
         self.signals.signalMessages.emit('Desconectado')
@@ -249,12 +251,12 @@ class Mqtt:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            self.client.connect(self.brokerAddress, port=1884, keepalive=30)    
+            self.client.connect(self.brokerAddress, port=1884, keepalive=10)    
         except:
+            self.signals.signalIsLoanding.emit(False)
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
 
-        self.signals.signalIsLoanding.emit(False)
         self.client.loop_start()
     
     def publish(self, name, data, timeData):
