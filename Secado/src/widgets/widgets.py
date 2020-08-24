@@ -175,6 +175,7 @@ class MenuBar:
         hbox = QHBoxLayout(self.menuBar)
         hbox.addWidget(self.state)
         hbox.setAlignment(Qt.AlignCenter)
+        hbox.setContentsMargins(0,0,0,0)
 
         archivoMenu = self.menuBar.addMenu('Archivo')
         preferenciasAction = QAction('Preferencias',self.menuBar, triggered=self.showDialog)
