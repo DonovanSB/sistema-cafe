@@ -171,11 +171,10 @@ class MenuBar:
 
         # Estado de la aplicacion
         self.state = QLabel()
-        self.state.setStyleSheet('font: 13px; font-weight:bold')
+        self.state.setStyleSheet('font: 12px; font-weight:bold')
         hbox = QHBoxLayout(self.menuBar)
         hbox.addWidget(self.state)
         hbox.setAlignment(Qt.AlignCenter)
-        hbox.setContentsMargins(0,0,0,0)
 
         archivoMenu = self.menuBar.addMenu('Archivo')
         preferenciasAction = QAction('Preferencias',self.menuBar, triggered=self.showDialog)
