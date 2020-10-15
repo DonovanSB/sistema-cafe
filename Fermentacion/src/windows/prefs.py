@@ -1,38 +1,40 @@
 import sys
 import os
+from PyQt5.QtWidgets import QScrollArea, QWidget, QLineEdit, QFrame, QHBoxLayout, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QDialog
+from PyQt5.QtCore import Qt
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/widgets")
 sys.path.append(route + "/providers")
-from PyQt5.QtWidgets import QScrollArea, QWidget, QLineEdit, QFrame, QHBoxLayout, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QDialog
-from PyQt5.QtCore import Qt
 import provider
 import widgets
 
 rutaPrefsUser =route + "/providers"
 class Preferencias(QDialog):
     def __init__(self):
-        super(Preferencias,self).__init__()
+        super().__init__()
         self.setWindowTitle("Preferencias")
 
         #Estilos
-        self.styleButtons = "QPushButton {background-color:#0d47a1; color: white; border-radius: 5px;font: 15px bold; margin: 5px 5px 5px 5px ; padding: 5px;}" "QPushButton:hover { background-color: #5472d3}" "QPushButton:pressed { background-color: #002171}"
-        
+        self.styleButtons = """QPushButton {background-color:#0d47a1;
+                                            color: white;
+                                            border-radius: 5px;
+                                            font: 15px bold;
+                                            margin: 5px 5px 5px 5px;
+                                            padding: 5px;}
+                            QPushButton:hover {background-color: #5472d3}
+                            QPushButton:pressed {background-color: #002171}"""
         #providers
         self.prefs = provider.LocalStorage(route=rutaPrefsUser, name = 'prefs')
-        
         self.signals = provider.Signals()
-
         self.preferences = []
-
         self.crearWidgets()
         self.show()
-    
+
     def crearWidgets(self):
-        self.preferences = self.prefs.read()
-       
+        self.preferences = self.prefs.read()     
         groupboxServer = QGroupBox("Opciones del servidor ",self)
-        
+
         labelServer = QLabel("Ingresar servidor")
         self.server = QLineEdit()
         if self.preferences:
@@ -71,14 +73,12 @@ class Preferencias(QDialog):
 
         #---Storage---
         groupboxStorage = QGroupBox("Opciones de almacenamiento ",self)
-        
         labelRoute = QLabel("Ingresar ruta de almacenamiento:")
         self.routeData = QLineEdit()
         if self.preferences:
             self.routeData.setText(self.preferences["routeData"])
         else:
             self.routeData.setPlaceholderText("/home/pi/data")
-        
         vboxStorage = QVBoxLayout()
         vboxStorage.addWidget(labelRoute)
         vboxStorage.addWidget(self.routeData)
@@ -140,3 +140,4 @@ class Preferencias(QDialog):
         self.prefs.update(dataJson)
         self.close()
         self.signals.signalUpdatePrefs.emit(self.routeData.text())
+        

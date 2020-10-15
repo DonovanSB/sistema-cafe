@@ -1,20 +1,18 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import sys
 import os
+from PyQt5.QtWidgets import QGraphicsDropShadowEffect, QDialog, QPushButton, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
+from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtCore import Qt
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/src/windows")
-from PyQt5.QtWidgets import QDialog, QGraphicsDropShadowEffect, QApplication, QPushButton, QWidget, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
-from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtCore import Qt
 import prefs
 
 rutaAssets = route + "/assets/"
 
 class Shadow(QGraphicsDropShadowEffect):
     def __init__(self):
-        super(Shadow,self).__init__()
+        super().__init__()
         self.setBlurRadius(5)
         self.setXOffset(0)
         self.setYOffset(3)
@@ -22,7 +20,7 @@ class Shadow(QGraphicsDropShadowEffect):
 
 class Login(QDialog):
     def __init__(self):
-        super(Login,self).__init__()
+        super().__init__()
         #--- Variables Ventana------
         self.top = 100
         self.left = 100
@@ -34,11 +32,11 @@ class Login(QDialog):
         self.setGeometry(self.left,self.top,self.width,self.height)
         self.setFixedSize(self.width,self.height)
         self.setStyleSheet("QDialog {background: white}")
-        self.Centrar()
-    
+        self.centerWindow()
+
         #--- Elementos de La GUI---
         self.widgets()
-        
+
         self.user.setText(os.getenv("USER_ENV"))
         self.password.setText(os.getenv("PASS_ENV"))
 
@@ -48,24 +46,24 @@ class Login(QDialog):
 
     def widgets(self):
 
-        Header = QFrame(self)
-        Header.resize(self.width,220)
-        Header.setStyleSheet("background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #0d47a1, stop:1 #4a148c)")
+        header = QFrame(self)
+        header.resize(self.width,220)
+        header.setStyleSheet("background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #0d47a1, stop:1 #4a148c)")
 
-        LabelImagen1 = QLabel(self)
-        LogoUdenar = QPixmap(rutaAssets + "udenar.png")
-        LabelImagen1.setPixmap(LogoUdenar)
-        LabelImagen1.resize(LogoUdenar.width(),LogoUdenar.height())
-        LabelImagen1.move(self.width/2-LogoUdenar.width()/2,10)
+        labelImagen1 = QLabel(self)
+        logoUdenar = QPixmap(rutaAssets + "udenar.png")
+        labelImagen1.setPixmap(logoUdenar)
+        labelImagen1.resize(logoUdenar.width(),logoUdenar.height())
+        labelImagen1.move(self.width/2-logoUdenar.width()/2,10)
 
-        BackgroundLogin = QFrame(self)
-        BackgroundLogin.move(0,180)
-        BackgroundLogin.resize(self.width,280)
-        BackgroundLogin.setStyleSheet("QFrame {border-radius: 20px; background-color: white; margin-left: 30px;  margin-right: 30px}")
-        BackgroundLogin.setGraphicsEffect(Shadow())
+        backgroundLogin = QFrame(self)
+        backgroundLogin.move(0,180)
+        backgroundLogin.resize(self.width,280)
+        backgroundLogin.setStyleSheet("QFrame {border-radius: 20px; background-color: white; margin-left: 30px;  margin-right: 30px}")
+        backgroundLogin.setGraphicsEffect(Shadow())
 
         #---Body---
-        vbox = QVBoxLayout(BackgroundLogin)
+        vbox = QVBoxLayout(backgroundLogin)
 
         #---Inicio de Sesion
         titleLogin  = QLabel("Iniciar sesión")
@@ -84,7 +82,7 @@ class Login(QDialog):
         self.password = QLineEdit()
         self.password.setStyleSheet("font:14px; margin-left: 30px; margin-right: 30px; padding: 5px")
         self.password.setEchoMode(QLineEdit.Password)
-        
+
         #self.password.setPlaceholderText("Ingrese su contraseña")
 
         #--- Ingresar---
@@ -103,20 +101,20 @@ class Login(QDialog):
         vbox.addWidget(self.iniciar)
         vbox.setContentsMargins(0,0,0,0)
 
-        self.mb = QMessageBox(self)
-        self.mb.setIcon(QMessageBox.Critical)
-        self.mb.setWindowTitle('Error')
-        self.mb.setText('Usuario o Constraseña incorrectos')
-        self.mb.setStandardButtons(QMessageBox.Ok)
+        self.messageBox = QMessageBox(self)
+        self.messageBox.setIcon(QMessageBox.Critical)
+        self.messageBox.setWindowTitle('Error')
+        self.messageBox.setText('Usuario o Constraseña incorrectos')
+        self.messageBox.setStandardButtons(QMessageBox.Ok)
 
-    def Centrar(self):
-        S_Screen = QDesktopWidget().availableGeometry().center()
-        S_Win = self.geometry()
-        self.move(S_Screen.x()-S_Win.width()/2,S_Screen.y() - S_Win.height()/2)
+    def centerWindow(self):
+        sizeScreen = QDesktopWidget().availableGeometry().center()
+        sizeWindow = self.geometry()
+        self.move(sizeScreen.x()-sizeWindow.width()/2,sizeScreen.y() - sizeWindow.height()/2)
 
     def submit(self):
         if (self.user.text() == os.getenv("USER_ENV") and self.password.text() == os.getenv("PASS_ENV")):
             self.close()
             self.prefsWindow = prefs.Preferencias()
         else:
-            self.mb.show()
+            self.messageBox.show()

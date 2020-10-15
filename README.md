@@ -25,6 +25,10 @@ sudo pip install schedule
 ```
 sudo apt install sqlite3
 ```
+* Paho-mqtt
+```
+sudo pip install paho-mqtt
+```
 # Configurar usuario y contraseña en las variables de entorno
 con
 ```

@@ -1,20 +1,18 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import sys
 import os
+from PyQt5.QtWidgets import QDialog, QGraphicsDropShadowEffect, QPushButton, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
+from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtCore import Qt
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/src/windows")
-from PyQt5.QtWidgets import QDialog, QGraphicsDropShadowEffect, QApplication, QPushButton, QWidget, QDesktopWidget,QFrame, QLabel, QVBoxLayout, QLineEdit, QMessageBox
-from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtCore import Qt
 import prefs
 
 rutaAssets = route + "/assets/"
 
 class Shadow(QGraphicsDropShadowEffect):
     def __init__(self):
-        super(Shadow,self).__init__()
+        super().__init__()
         self.setBlurRadius(5)
         self.setXOffset(0)
         self.setYOffset(3)
@@ -22,7 +20,7 @@ class Shadow(QGraphicsDropShadowEffect):
 
 class Login(QDialog):
     def __init__(self):
-        super(Login,self).__init__()
+        super().__init__()
         #--- Variables Ventana------
         self.top = 100
         self.left = 100
@@ -110,9 +108,9 @@ class Login(QDialog):
         self.mb.setStandardButtons(QMessageBox.Ok)
 
     def Centrar(self):
-        S_Screen = QDesktopWidget().availableGeometry().center()
-        S_Win = self.geometry()
-        self.move(S_Screen.x()-S_Win.width()/2,S_Screen.y() - S_Win.height()/2)
+        sizeScreen = QDesktopWidget().availableGeometry().center()
+        sizeWindow = self.geometry()
+        self.move(sizeScreen.x()-sizeWindow.width()/2,sizeScreen.y() - sizeWindow.height()/2)
 
     def submit(self):
         if (self.user.text() == os.getenv("USER_ENV") and self.password.text() == os.getenv("PASS_ENV")):
