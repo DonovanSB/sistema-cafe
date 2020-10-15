@@ -1,17 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-import random
-from datetime import datetime
-import matplotlib.dates as dates
 import os
-from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
-from PyQt5.QtWidgets import QMessageBox
 import json
+import random
 import logging
-import paho.mqtt.client as mqtt
 import time
 import sqlite3
-from sqlite3 import Error 
+from sqlite3 import Error
+from datetime import datetime
+import matplotlib.dates as dates
+from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
+import paho.mqtt.client as mqtt
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,7 +20,7 @@ logging.basicConfig(filename = root + '/secado.log', format='%(asctime)s - %(lev
 
 qmutex = QMutex()
 
-def singleton(cls):    
+def singleton(cls):
     instance = [None]
     def wrapper(*args, **kwargs):
         if instance[0] is None:
@@ -33,8 +30,17 @@ def singleton(cls):
     return wrapper
 
 class Data:
-    def __init__(self, loading, textTempEnv, textHumEnv, textTemp1, textHum1, textTemp2, textHum2, textTemp3, textHum3, textHumGrain,):
-        
+    def __init__(self,
+                 loading,
+                 textTempEnv,
+                 textHumEnv,
+                 textTemp1,
+                 textHum1,
+                 textTemp2,
+                 textHum2,
+                 textTemp3,
+                 textHum3,
+                 textHumGrain):
         self.loading = loading
         self.textTempEnv  = textTempEnv
         self.textHumEnv   = textHumEnv
@@ -45,7 +51,7 @@ class Data:
         self.textTemp3    = textTemp3
         self.textHum3     = textHum3
         self.textHumGrain = textHumGrain
-       
+
         self.numData      = 1000
 
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
@@ -55,7 +61,7 @@ class Data:
         except:
             logging.error('No se pudo encontrar la ruta de almacenamiento de datos en prefs.json')
             self.routeData = routeDatos + '/datos.db'
-    
+
         # Inicializaciones para almacenamiento de datos
         self.initSQLite(self.routeData)
         self.initDataService()
@@ -67,18 +73,18 @@ class Data:
 
         # Mqqt
         self.client = Mqtt('secado')
-        
+
         # Verificar si hay datos pendiendes en un nuevo hilo
         self.threadForever = ThreadForever(target=self.client.verifyPending)
         self.threadForever.start()
-    
+
     def verifyRoute(self,route):
         if os.path.exists(route):
             route = os.path.abspath(route + '/data')
         else:
             route = routeDatos + '/data'
         return route
-    
+
     def verifySamplingTimes(self):
         try:
             samplingTimes = self.prefs.read()["samplingTimes"]
@@ -122,28 +128,44 @@ class Data:
         self.initDataService()
         self.thread = Thread(target = self.client.connect)
         self.thread.start()
-        
+
 
     def getData(self, index):
-        datos= [self.envService.data[0],self.envService.data[1],self.env1Service.data[0],self.env1Service.data[1],self.env2Service.data[0],self.env2Service.data[1],self.env3Service.data[0],self.env3Service.data[1],self.humGrainService.data]     
+        datos= [self.envService.data[0],
+                self.envService.data[1],
+                self.env1Service.data[0],
+                self.env1Service.data[1],
+                self.env2Service.data[0],
+                self.env2Service.data[1],
+                self.env3Service.data[0],
+                self.env3Service.data[1],
+                self.humGrainService.data]
         return datos[index]
 
     def getTime(self, index):
-        time = [self.envService.time, self.envService.time, self.env1Service.time, self.env1Service.time, self.env2Service.time, self.env2Service.time, self.env3Service.time, self.env3Service.time, self.humGrainService.time]
-        return time[index]
+        timesList = [self.envService.time,
+                     self.envService.time,
+                     self.env1Service.time,
+                     self.env1Service.time,
+                     self.env2Service.time,
+                     self.env2Service.time,
+                     self.env3Service.time,
+                     self.env3Service.time,
+                     self.humGrainService.time]
+        return timesList[index]
 
     def env(self):
         temperatureEnv = random.randint(18, 25)
         humidityEnv = random.randint(50, 60)
         currentTime = datetime.now()
         self.envService.update([temperatureEnv, humidityEnv], currentTime)
-    
+
     def env1(self):
         temperature1 = random.randint(18, 25)
         humidity1 = random.randint(50, 60)
         currentTime = datetime.now()
         self.env1Service.update([temperature1, humidity1], currentTime)
-        
+
     def env2(self):
         temperature2 = random.randint(18, 25)
         humidity2 = random.randint(50, 60)
@@ -155,7 +177,6 @@ class Data:
         humidity3 = random.randint(50, 60)
         currentTime = datetime.now()
         self.env3Service.update([temperature3, humidity3], currentTime)
-            
 
 class DataService:
     def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
@@ -176,7 +197,7 @@ class DataService:
         else:
             self.data = []
         self.time = []
-    
+
     def update(self, data, time):
         self.time.append(time)
         if len(self.time) > self.numData:
@@ -201,7 +222,7 @@ class DataService:
             # Enviar datos al servidor
             self.client.publish(self.name, data, time)
             self.sqlite.insert((time, data), names = self.namesDB)
-        # Actualizar grafica  
+        # Actualizar grafica
         self.signals.signalUpdateGraph.emit()
 
 @singleton
@@ -210,7 +231,7 @@ class Mqtt:
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
         self.isPending = True
-        
+
         self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
         self.nameTable = 'pending'
         fields = '(id integer PRIMARY KEY, name text, value real, time date)'
@@ -236,12 +257,11 @@ class Mqtt:
             self.signals.signalMessages.emit('En línea')
         else:
             self.signals.signalMessages.emit('Desconectado')
-        
         self.signals.signalIsLoanding.emit(False)
 
     def onDisconnect(self, client, userdata, rc):
         self.signals.signalMessages.emit('Desconectado')
-        
+
     def connect(self):
         self.signals.signalIsLoanding.emit(True)
         self.signals.signalMessages.emit('Desconectado')
@@ -251,23 +271,23 @@ class Mqtt:
             logging.error('No se encontró server en prefs.json')
         try:
             self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            self.client.connect(self.brokerAddress, port=1884, keepalive=10)    
+            self.client.connect(self.brokerAddress, port=1884, keepalive=10)
         except:
             self.signals.signalIsLoanding.emit(False)
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
             logging.error('No se pudo conectar al servidor')
 
         self.client.loop_start()
-    
+
     def publish(self, name, data, timeData):
         payload = json.dumps({name:data,'time':str(timeData)})
         info = self.client.publish(self.topic, payload)
         time.sleep(0.1)
-        if info.is_published() == False:
+        if not info.is_published():
             # logging.error('No se pudo publicar los datos en el servidor')
             self.sqlite.insert((name, data, timeData), names = self.names)
             self.isPending = True
-    
+
     def verifyPending(self):
         if self.isPending and self.client.is_connected():
             dataTemp = self.sqlite.find()
@@ -277,9 +297,9 @@ class Mqtt:
                     info = self.client.publish(self.topic, payload)
                     time.sleep(0.1)
                     if info.is_published():
-                        self.sqlite.removeById(item[0]) 
+                        self.sqlite.removeById(item[0])
             else:
-                self.isPending = False                    
+                self.isPending = False
 
 class SQLite:
     def __init__(self, nameDB):
@@ -323,8 +343,8 @@ class SQLite:
 
 class Plotter:
     def __init__(self,Figure,ax):
-        self.Fig = Figure
-        self.ax = ax
+        self.figure = Figure
+        self.axis = ax
         self.formatTime = dates.DateFormatter("%H:%M")
         self.limits = [[0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,100]]
 
@@ -332,18 +352,18 @@ class Plotter:
         if len(datax) <= 0 and len(datay) <= 0:
             datax = [datetime.now()]
             datay = [0]
-        self.ax.cla()
+        self.axis.cla()
         if len(datax) == len(datay):
-            self.ax.plot(datax,datay, 'b-')
-        self.ax.xaxis.set_major_formatter(self.formatTime)
-        self.ax.grid()
-        self.ax.set_ylim(self.limits[index][0],self.limits[index][1])
-        self.ax.set_title(title,fontsize = "18", fontweight='bold')
-        self.ax.set_xlabel('Hora',fontsize = "14")
-        self.ax.set_ylabel('x(t)',fontsize = "15")
-        self.Fig.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
-        self.Fig.draw()
-            
+            self.axis.plot(datax,datay, 'b-')
+        self.axis.xaxis.set_major_formatter(self.formatTime)
+        self.axis.grid()
+        self.axis.set_ylim(self.limits[index][0],self.limits[index][1])
+        self.axis.set_title(title,fontsize = "18", fontweight='bold')
+        self.axis.set_xlabel('Hora',fontsize = "14")
+        self.axis.set_ylabel('x(t)',fontsize = "15")
+        self.figure.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
+        self.figure.draw()
+
 class LocalStorage():
     def __init__(self, route, name):
         self.optionsServer = []
@@ -372,20 +392,20 @@ class LocalStorage():
 class Thread(QThread):
 
     def __init__(self, target):
-        super(Thread,self).__init__()
+        super().__init__()
         self.threadactive = True
         self.target = target
 
     def run(self):
         self.target()
-    
+
     def stop(self):
         self.threadactive = False
 
 class ThreadForever(QThread):
 
     def __init__(self, target, every=5):
-        super(ThreadForever,self).__init__()
+        super().__init__()
         self.threadactive = True
         self.target = target
         self.every = every
@@ -394,7 +414,7 @@ class ThreadForever(QThread):
         while self.threadactive:
             self.target()
             time.sleep(self.every)
-    
+
     def stop(self):
         self.threadactive = False
 
