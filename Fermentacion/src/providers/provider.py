@@ -352,7 +352,7 @@ class Plotter:
         self.figure = Figure
         self.axis = ax
         self.formatTime = dates.DateFormatter("%H:%M")
-        self.limits = [[0,80], [0,100], [0,80], [0,80], [0,80], [0,85], [0,14]]
+        self.limits = [[0,80], [0,100], [0,80], [0,80], [0,80], [0,80], [0,85], [0,14]]
 
     def plot(self,datax,datay,title,index):
         if len(datax) <= 0 and len(datay) <= 0:
