@@ -68,7 +68,6 @@ class Data:
 
         self.signals = Signals()
         self.signals.signalIsLoanding.connect(self.isLoading)
-        self.signals.signalUpdatePrefs.connect(self.updatePrefs)
         self.signals.signalUpdateInputValue.connect(self.updateInputValue)
 
         # Mqqt
@@ -121,14 +120,6 @@ class Data:
     def updateInputValue(self,hum):
         currentTime = datetime.now()
         self.humGrainService.update(hum, currentTime)
-
-    def updatePrefs(self,route):
-        self.routeData = self.verifyRoute(os.path.abspath(route))
-        self.initSQLite(self.routeData)
-        self.initDataService()
-        self.thread = Thread(target = self.client.connect)
-        self.thread.start()
-
 
     def getData(self, index):
         datos= [self.envService.data[0],
@@ -420,7 +411,7 @@ class ThreadForever(QThread):
 
 @singleton
 class Signals(QObject):
-    signalUpdatePrefs = pyqtSignal(str)
+    signalUpdatePrefs = pyqtSignal()
     signalUpdateInputValue = pyqtSignal(float)
     signalUpdateGraph = pyqtSignal()
     signalIsLoanding = pyqtSignal(bool)

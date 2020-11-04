@@ -3,7 +3,7 @@ import os
 import time
 import schedule
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow, QDesktopWidget, QWidget, QGridLayout
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QCoreApplication, QProcess
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 route = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(route + "/src/widgets")
@@ -34,6 +34,7 @@ class Estacion(QMainWindow):
         self.signals.signalUpdateGraph.connect(self.updateGraph)
         self.signals.signalAlert.connect(self.alerts)
         self.signals.signalMessages.connect(self.messages)
+        self.signals.signalUpdatePrefs.connect(self.restartApp)
 
         #---Crear Widgets---
         self.createWidgets()
@@ -61,6 +62,9 @@ class Estacion(QMainWindow):
         #-- Mostrar Ventana---
         self.show()
         self.setFocus()
+    def restartApp(self):
+        QCoreApplication.quit()
+        QProcess.startDetached(sys.executable, sys.argv)
 
     def closeEvent(self, event):
         reply = QMessageBox.question(None,' ',"¿Realmente desea cerrar la aplicación?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -131,17 +135,6 @@ class Thread(QThread):
         self.data = data
         self.prefs = provider.LocalStorage(route=rutaProviders, name = 'prefs')
         self.samplingTimes = self.data.verifySamplingTimes()
-        self.signals = provider.Signals()
-        self.signals.signalUpdatePrefs.connect(self.updatedPrefs)
-
-    def updatedPrefs(self):
-        self.samplingTimes = self.data.verifySamplingTimes()
-        schedule.clear()
-        self.stop()
-        while self.isRunning():
-            pass
-        self.threadactive = True
-        self.start()
 
     def run(self):
         schedule.every(int(self.samplingTimes["env"])).seconds.do(self.data.env)
