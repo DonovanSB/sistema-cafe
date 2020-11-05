@@ -340,20 +340,24 @@ class Plotter:
         self.limits = [[0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,80], [0,100], [0,100]]
 
     def plot(self,datax,datay,title,index):
-        if len(datax) <= 0 and len(datay) <= 0:
-            datax = [datetime.now()]
-            datay = [0]
-        self.axis.cla()
-        if len(datax) == len(datay):
-            self.axis.plot(datax,datay, 'b-')
-        self.axis.xaxis.set_major_formatter(self.formatTime)
-        self.axis.grid()
-        self.axis.set_ylim(self.limits[index][0],self.limits[index][1])
-        self.axis.set_title(title,fontsize = "18", fontweight='bold')
-        self.axis.set_xlabel('Hora',fontsize = "14")
-        self.axis.set_ylabel('x(t)',fontsize = "15")
-        self.figure.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
-        self.figure.draw()
+        try:
+            if len(datax) <= 0 and len(datay) <= 0:
+                datax = [datetime.now()]
+                datay = [0]
+            self.axis.cla()
+            if len(datax) == len(datay):
+                self.axis.plot(datax,datay, 'b-')
+            self.axis.xaxis.set_major_formatter(self.formatTime)
+            self.axis.grid()
+            self.axis.set_ylim(self.limits[index][0],self.limits[index][1])
+            self.axis.set_title(title,fontsize = "18", fontweight='bold')
+            self.axis.set_xlabel('Hora',fontsize = "14")
+            self.axis.set_ylabel('x(t)',fontsize = "15")
+            self.figure.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
+            self.figure.draw()
+        except:
+            print('No se pudo graficar')
+            logging.warning('No se pudo graficar')
 
 class LocalStorage():
     def __init__(self, route, name):
