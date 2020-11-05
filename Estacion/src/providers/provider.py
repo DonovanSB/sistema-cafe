@@ -54,7 +54,6 @@ class Data:
 
         self.signals = Signals()
         self.signals.signalIsLoanding.connect(self.isLoading)
-        self.signals.signalUpdatePrefs.connect(self.updatePrefs)
 
         # Mqqt
         self.client = Mqtt('estacion')
@@ -103,13 +102,6 @@ class Data:
             self.loading.start()
         else:
             self.loading.stop()
-
-    def updatePrefs(self,route):
-        self.routeData = self.verifyRoute(os.path.abspath(route))
-        self.initSQLite(self.routeData)
-        self.initDataService()
-        self.thread = Thread(target = self.client.connect)
-        self.thread.start()
 
     def getData(self, index):
         data = [self.envService.data[0], self.envService.data[1], self.irradService.data, self.speedService.data, self.directionService.data, self.rainService.data]
@@ -318,21 +310,25 @@ class Plotter:
         self.limits = [[0,80], [0,100], [0,1200], [0,100], [0,360], [0,50]]
 
     def plot(self,datax,datay,title,index):
-        if len(datax) <= 0 and len(datay) <= 0:
-            datax = [datetime.now()]
-            datay = [0]
-        self.axis.cla()
-        if len(datax) == len(datay):
+        try:
+            if len(datax) <= 0 and len(datay) <= 0:
+                datax = [datetime.now()]
+                datay = [0]
+            self.axis.cla()
+            if len(datax) == len(datay):
+                self.axis.plot(datax,datay, 'b-')
             self.axis.plot(datax,datay, 'b-')
-        self.axis.plot(datax,datay, 'b-')
-        self.axis.xaxis.set_major_formatter(self.formatTime)
-        self.axis.grid()
-        self.axis.set_ylim(self.limits[index][0],self.limits[index][1])
-        self.axis.set_title(title,fontsize = "18", fontweight='bold')
-        self.axis.set_xlabel('Hora',fontsize = "14")
-        self.axis.set_ylabel('x(t)',fontsize = "15")
-        self.figure.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
-        self.figure.draw()
+            self.axis.xaxis.set_major_formatter(self.formatTime)
+            self.axis.grid()
+            self.axis.set_ylim(self.limits[index][0],self.limits[index][1])
+            self.axis.set_title(title,fontsize = "18", fontweight='bold')
+            self.axis.set_xlabel('Hora',fontsize = "14")
+            self.axis.set_ylabel('x(t)',fontsize = "15")
+            self.figure.figure.subplots_adjust(top = 0.85,bottom=0.21, left=0.13, right = 0.95)
+            self.figure.draw()
+        except:
+            print('No se pudo graficar')
+            logging.warning('No se pudo graficar')
 
 class LocalStorage():
     def __init__(self, route, name):
@@ -386,7 +382,7 @@ class ThreadForever(QThread):
 
 @singleton
 class Signals(QObject):
-    signalUpdatePrefs = pyqtSignal(str)
+    signalUpdatePrefs = pyqtSignal()
     signalUpdateInputValue = pyqtSignal(float)
     signalUpdateGraph = pyqtSignal()
     signalIsLoanding = pyqtSignal(bool)

@@ -1,6 +1,6 @@
 import sys
 import os
-from PyQt5.QtWidgets import QScrollArea, QWidget, QLineEdit, QFrame, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog
+from PyQt5.QtWidgets import QScrollArea, QMessageBox, QWidget, QLineEdit, QFrame, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog
 from PyQt5.QtCore import Qt
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 route = os.path.abspath(parent)
@@ -142,4 +142,7 @@ class Preferencias(QDialog):
         dataJson = {"server":self.server.text(),"topic":self.topic.text(),"routeData":self.routeData.text(), "samplingTimes": samplingTimes}
         self.prefs.update(dataJson)
         self.close()
-        self.signals.signalUpdatePrefs.emit(self.routeData.text())
+        reply = QMessageBox.question(None,' ',"Los cambios harán efecto después de reiniciar la aplicación ¿Desea reiniciar la aplicación ahora?",
+                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.signals.signalUpdatePrefs.emit()
