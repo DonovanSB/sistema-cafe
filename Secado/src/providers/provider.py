@@ -9,6 +9,7 @@ from datetime import datetime
 import matplotlib.dates as dates
 from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
 import paho.mqtt.client as mqtt
+import sensorsDatalogger
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,6 +20,12 @@ routeDatos = root + '/datos'
 logging.basicConfig(filename = root + '/secado.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 qmutex = QMutex()
+
+# Sensores
+dht = sensorsDatalogger.DHTConnector('DHT', 'AM2301')
+dht1 = sensorsDatalogger.DHTConnector('DHT1', 'AM2301')
+dht2 = sensorsDatalogger.DHTConnector('DHT2', 'AM2301')
+dht3 = sensorsDatalogger.DHTConnector('DHT3', 'AM2301')
 
 def singleton(cls):
     instance = [None]
@@ -146,26 +153,30 @@ class Data:
         return timesList[index]
 
     def env(self):
-        temperatureEnv = random.randint(18, 25)
-        humidityEnv = random.randint(50, 60)
+        humidity, temperature = dht.getHumidityAndTemperature()
+        humidityEnv = round(humidity,1)
+        temperatureEnv = round(temperature,1)
         currentTime = datetime.now()
         self.envService.update([temperatureEnv, humidityEnv], currentTime)
 
     def env1(self):
-        temperature1 = random.randint(18, 25)
-        humidity1 = random.randint(50, 60)
+        humidity, temperature = dht1.getHumidityAndTemperature()
+        humidity1 = round(humidity,1)
+        temperature1 = round(temperature,1)
         currentTime = datetime.now()
         self.env1Service.update([temperature1, humidity1], currentTime)
 
     def env2(self):
-        temperature2 = random.randint(18, 25)
-        humidity2 = random.randint(50, 60)
+        humidity, temperature = dht2.getHumidityAndTemperature()
+        humidity2 = round(humidity,1)
+        temperature2 = round(temperature,1)
         currentTime = datetime.now()
         self.env2Service.update([temperature2, humidity2], currentTime)
 
     def env3(self):
-        temperature3 = random.randint(18, 25)
-        humidity3 = random.randint(50, 60)
+        humidity, temperature = dht3.getHumidityAndTemperature()
+        humidity3 = round(humidity,1)
+        temperature3 = round(temperature,1)
         currentTime = datetime.now()
         self.env3Service.update([temperature3, humidity3], currentTime)
 

@@ -9,6 +9,7 @@ from datetime import datetime
 import matplotlib.dates as dates
 from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
 import paho.mqtt.client as mqtt
+import sensorsStation
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,6 +19,9 @@ routeDatos = root + '/datos'
 logging.basicConfig(filename = root + '/estacion.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 qmutex = QMutex()
+
+# Sensores
+estacion = sensorsStation.SensorsStation()
 
 def singleton(cls):
     instance = [None]
@@ -113,28 +117,29 @@ class Data:
 
     def env(self):
         # Leer datos
-        temperatureR = random.randint(18, 25)
-        humidityR = random.randint(50, 60)
+        humidity, temperature = estacion.getHumidityAndTemperature()
+        humidityR = round(humidity,1)
+        temperatureR = round(temperature,1)
         currentTime = datetime.now()
         self.envService.update([temperatureR, humidityR], currentTime)
 
     def irrad(self):
-        irradiance = random.randint(200, 300)
+        irradiance = round(estacion.getRadiation(),1)
         currentTime = datetime.now()
         self.irradService.update(irradiance, currentTime)
 
     def windSpeed(self):
-        speed = random.randint(5, 10)
+        speed = round(estacion.getVelocity())
         currentTime = datetime.now()
         self.speedService.update(speed, currentTime)
 
     def windDirection(self):
-        direction = random.randint(0, 360)
+        direction = round(estacion.getDirection())
         currentTime = datetime.now()
         self.directionService.update(direction, currentTime)
 
     def rain(self):
-        rain = random.randint(0, 5)
+        rain = round(estacion.getPrecipitation(),1)
         currentTime = datetime.now()
         self.rainService.update(rain, currentTime)
 
