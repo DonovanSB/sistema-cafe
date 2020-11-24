@@ -272,8 +272,8 @@ class Mqtt:
         except:
             logging.error('No se encontró server en prefs.json')
         try:
-            self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            self.client.connect(self.brokerAddress, port=1884, keepalive=10)
+            #self.client.username_pw_set(username="usuario_publicador_1",password="123")
+            self.client.connect(self.brokerAddress, port=1883, keepalive=10)
         except:
             self.signals.signalIsLoanding.emit(False)
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
