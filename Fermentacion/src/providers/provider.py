@@ -86,12 +86,12 @@ class Data:
         namesTemp = '(time, temperatura)  VALUES(?, ?)'
         namesBrix = '(time, brix)  VALUES(?, ?)'
         namesPH = '(time, ph)  VALUES(?, ?)'
-        self.envService = DataService( self.sqlite, 'Ambiente', namesEnv, ['T.ambiente', 'H.ambiente'], [self.textTempR, self.textHumR], self.numData, ["°C", "%"], 2)
-        self.temp1Service = DataService( self.sqlite, 'Temperatura1', namesTemp, 'Temp1', self.textTemp1, self.numData, "°C")
-        self.temp2Service = DataService( self.sqlite, 'Temperatura2', namesTemp, 'Temp2', self.textTemp2, self.numData, "°C")
-        self.temp3Service = DataService( self.sqlite, 'Temperatura3', namesTemp, 'Temp3', self.textTemp3, self.numData, "°C")
-        self.temp4Service = DataService( self.sqlite, 'Temperatura4', namesTemp, 'Temp4', self.textTemp4, self.numData, "°C")
-        self.brixService = DataService( self.sqlite, 'Brix', namesBrix, 'Brix', self.textBrix, self.numData, "Bx")
+        self.envService = DataService( self.sqlite, 'Ambiente', namesEnv, ['tempEnv', 'humEnv'], [self.textTempR, self.textHumR], self.numData, ["°C", "%"], 2)
+        self.temp1Service = DataService( self.sqlite, 'Temperatura1', namesTemp, 'temp1', self.textTemp1, self.numData, "°C")
+        self.temp2Service = DataService( self.sqlite, 'Temperatura2', namesTemp, 'temp2', self.textTemp2, self.numData, "°C")
+        self.temp3Service = DataService( self.sqlite, 'Temperatura3', namesTemp, 'temp3', self.textTemp3, self.numData, "°C")
+        self.temp4Service = DataService( self.sqlite, 'Temperatura4', namesTemp, 'temp4', self.textTemp4, self.numData, "°C")
+        self.brixService = DataService( self.sqlite, 'Brix', namesBrix, 'brix', self.textBrix, self.numData, "Bx")
         self.phService = DataService( self.sqlite, 'PH', namesPH, 'ph', self.textPh, self.numData, "")
 
     def initSQLite(self, route):
@@ -195,8 +195,9 @@ class DataService:
             self.data = []
         self.time = []
 
-    def update(self, data, time):
-        self.time.append(time)
+    def update(self, data, timeData):
+        timeString = timeData.strftime("%Y-%m-%d %H:%M:%S")
+        self.time.append(timeData)
         if len(self.time) > self.numData:
             self.time.pop(0)
 
@@ -207,8 +208,8 @@ class DataService:
                     self.data[i].pop(0)
                 self.text[i].setText( str(data[i]) +" "+ self.units[i])
                 # Enviar datos al servidor
-                self.client.publish(self.name[i],data[i],time)
-            datos = [time]
+                self.client.publish(self.name[i],data[i],timeData)
+            datos = [timeString]
             datos.extend(data)
             self.sqlite.insert(datos, names = self.namesDB)
         else:
@@ -217,8 +218,8 @@ class DataService:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
             # Enviar datos al servidor
-            self.client.publish(self.name, data, time)
-            self.sqlite.insert((time, data), names = self.namesDB)
+            self.client.publish(self.name, data, timeData)
+            self.sqlite.insert((timeString, data), names = self.namesDB)
         # Actualizar grafica
         self.signals.signalUpdateGraph.emit()
 
@@ -237,10 +238,31 @@ class Mqtt:
 
         self.signals = Signals()
         try:
-            self.topic = self.prefs.read()['topic']
+            self.brokerAddress = self.prefs.read()['server']
         except:
-            logging.error('No se encontró topic en prefs.json')
-            self.topic = 'estacion/fermentacion'
+            logging.error('No se encontró server en prefs.json')
+            self.brokerAddress = '192.168.1.5'
+        try:
+            self.port = self.prefs.read()['port']
+        except:
+            logging.error('No se encontró puerto en prefs.json')
+            self.port = 1883
+        try:
+            self.user = self.prefs.read()['user']
+        except:
+            logging.error('No se encontró usuario mqqt en prefs.json')
+            self.user = 'user'
+        try:
+            self.password = self.prefs.read()['password']
+        except:
+            logging.error('No se encontró contraseña mqqt en prefs.json')
+            self.password = '12345'
+        try:
+            self.topics = self.prefs.read()["topics"]
+        except:
+            logging.error("Topics no encontrados")
+            self.topics = {"tempEnv":"topic1", "humEnv":"topic2", "temp1":"topic3", "temp2":"topic4",
+                           "temp3":"topic5", "temp4":"topic6", "brix":"topic7", "ph":"topic8"}
 
         self.client.on_connect = self.onConnect
         self.client.on_disconnect = self.onDisconnect
@@ -264,12 +286,8 @@ class Mqtt:
         self.signals.signalIsLoanding.emit(True)
         self.signals.signalMessages.emit('Desconectado')
         try:
-            self.brokerAddress = self.prefs.read()['server']
-        except:
-            logging.error('No se encontró server en prefs.json')
-        try:
-            self.client.username_pw_set(username="usuario_publicador_1",password="123")
-            self.client.connect(self.brokerAddress, port=1884, keepalive=10)
+            self.client.username_pw_set(username=self.user,password=self.password)
+            self.client.connect(self.brokerAddress, port=self.port, keepalive=10)
         except:
             self.signals.signalIsLoanding.emit(False)
             self.signals.signalAlert.emit('No se pudo conectar al servidor')
@@ -278,12 +296,13 @@ class Mqtt:
         self.client.loop_start()
 
     def publish(self, name, data, timeData):
-        payload = json.dumps({name:data,'time':str(timeData)})
-        info = self.client.publish(self.topic, payload)
+        timestamp = int(timeData.timestamp())
+        payload = json.dumps({"valor1":data,'Fecha':timestamp})
+        info = self.client.publish(self.topics[name], payload)
         time.sleep(0.1)
         if not info.is_published():
             # logging.error('No se pudo publicar los datos en el servidor')
-            self.sqlite.insert((name, data, timeData), names = self.names)
+            self.sqlite.insert((name, data, timestamp), names = self.names)
             self.isPending = True
 
     def verifyPending(self):
@@ -291,8 +310,8 @@ class Mqtt:
             dataTemp = self.sqlite.find()
             if dataTemp:
                 for item in dataTemp:
-                    payload = json.dumps({item[1]:item[2], 'time':str(item[3])})
-                    info = self.client.publish(self.topic, payload)
+                    payload = json.dumps({"valor1":item[2], 'Fecha': item[3]})
+                    info = self.client.publish(self.topics[item[1]], payload)
                     time.sleep(0.1)
                     if info.is_published():
                         self.sqlite.removeById(item[0])
@@ -429,4 +448,3 @@ class Signals(QObject):
     signalAlert = pyqtSignal(str)
     signalMessages = pyqtSignal(str)
 
-    statusFile = True
