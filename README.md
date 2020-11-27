@@ -36,8 +36,8 @@ sudo nano ~/.profile
 ```
 y agregando las siguientes lineas al final
 ```
-USER_ENV="your user"
-PASS_ENV="your password"
+export USER_ENV="your user"
+export PASS_ENV="your password"
 ```
 reiniciar el sistema
 
