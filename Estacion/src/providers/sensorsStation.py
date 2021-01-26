@@ -89,7 +89,7 @@ class SensorsStation:
 		
 	def getDirection(self):
 		dataAdc = adc.read_adc(0, gain=2/3)
-		return convertRange(dataAdc, 0, 27070, 0, 360)
+		return min(max(convertRange(dataAdc, 0, 27070, 0, 360),0),360)
 		
 	def getTemperature(self):
 		humidity, temperature = readAM2301(pinDHT)
