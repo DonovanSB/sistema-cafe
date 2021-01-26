@@ -93,7 +93,7 @@ class Estacion(QMainWindow):
         self.irradWidget = widgets.RoundedContainer("Irradiancia","irrad.png","200 W/m²")
         self.velocidadWidget = widgets.RoundedContainer("Velocidad\n Viento","velocidad.svg","10 km/h")
         self.direccionWidget = widgets.RoundedContainer("Dirección\n Viento","direccion.png","90 °")
-        self.lluviaWidget = widgets.RoundedContainer("Lluvia","lluvia.png","50 cm/h")
+        self.lluviaWidget = widgets.RoundedContainer("Lluvia","lluvia.png","0 cm/día")
 
         # Menu de visuzalización
         self.menuVis = widgets.MenuVisualizacion()
