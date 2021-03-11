@@ -87,7 +87,7 @@ class Data:
         self.irradService = DataService( self.sqlite, 'Irradiancia', namesIrrad, 'irrad', self.textIrrad, self.numData, "W/m²")
         self.speedService = DataService( self.sqlite, 'VelocidadV', namesSpeed, 'speed', self.textSpeed, self.numData, "km/h")
         self.directionService = DataService( self.sqlite, 'DireccionV', namesDir, 'direction', self.textDir, self.numData, "°")
-        self.rainService = DataService( self.sqlite, 'Lluvia', namesRain, 'rain', self.textRain, self.numData, "cm/h")
+        self.rainService = DataService( self.sqlite, 'Lluvia', namesRain, 'rain', self.textRain, self.numData, "cm/día")
 
     def initSQLite(self, route):
         self.sqlite = SQLite(nameDB = route)
