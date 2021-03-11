@@ -24,6 +24,7 @@ sudo pip3 install schedule
 * SQLite3
 ```
 sudo apt install sqlite3
+sudo apt-get install sqlitebrowser
 ```
 * Paho-mqtt
 ```
