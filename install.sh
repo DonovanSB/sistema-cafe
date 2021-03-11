@@ -1,13 +1,13 @@
 #! /bin/bash
-sudo apt install toilet
+sudo apt install -y toilet
 toilet -f mono12 -F metal App café Udenar
 echo =========== Empezaremos con la instalación de librerías ...============
 sudo apt update
 sudo apt upgrade
 
 echo =========== Instalando PyQt5 ===========
-sudo apt-get install python3-pyqt5
-sudo apt-get install python3-pyqt5.qtsql
+sudo apt-get install -y python3-pyqt5
+sudo apt-get install -y python3-pyqt5.qtsql
 
 echo =========== Instalando Matplotlib ===========
 python3 -m pip install -U pip
@@ -17,8 +17,8 @@ echo =========== Instalando schedule ===========
 sudo pip3 install schedule
 
 echo =========== Instalando sqlite3 ===========
-sudo apt install sqlite3
-sudo apt install sqlitebrowser
+sudo apt install -y sqlite3
+sudo apt install -y sqlitebrowser
 
 echo =========== Instalando Paho-mqtt ===========
 sudo pip3 install paho-mqtt
