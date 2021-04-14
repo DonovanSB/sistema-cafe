@@ -1,6 +1,12 @@
 ## Sistema de monitoreo de cultivos de café
 
-## Dependencias
+## Instalar librerias automaticamente 
+correr en la ruta del repositorio
+```
+sh ./install.sh
+```
+
+## Manualmente:
 
 * PyQt5
 ```
@@ -24,6 +30,7 @@ sudo pip3 install schedule
 * SQLite3
 ```
 sudo apt install sqlite3
+sudo apt-get install sqlitebrowser
 ```
 * Paho-mqtt
 ```
@@ -58,3 +65,24 @@ reiniciar el sistema
 
 ## Inicio del programa
 Ejecutar main.py
+
+## Correr app cuando inicia Raspberry
+```
+mkdir ~/.config/autostart
+sudo nano ~/.config/autostart/nombre.desktop
+```
+pegar
+```
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Secado
+Exec=python3 /home/pi/Development/sistema-cafe/Secado/main.py
+Terminal=true
+Categories=Utility;
+StartupNotify=true
+```
+## Acceso directo en aplicaciones
+```
+sudo nano /usr/share/applications/nombre.desktop
+```
