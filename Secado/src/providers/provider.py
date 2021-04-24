@@ -6,6 +6,7 @@ import time
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
+import uuid
 import matplotlib.dates as dates
 from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
 import paho.mqtt.client as mqtt
@@ -71,7 +72,7 @@ class Data:
         self.signals.signalUpdateInputValue.connect(self.updateInputValue)
 
         # Mqqt
-        self.client = Mqtt('secado')
+        self.client = Mqtt()
 
         # Verificar si hay datos pendiendes en un nuevo hilo
         self.threadForever = ThreadForever(target=self.client.verifyPending)
@@ -198,7 +199,7 @@ class DataService:
         self.signals = Signals()
 
         # Mqqt
-        self.client = Mqtt('secado')
+        self.client = Mqtt()
 
         if self.numVarSensor > 1:
             self.data = [[] for i in range(self.numVarSensor)]
@@ -239,9 +240,9 @@ class DataService:
 
 @singleton
 class Mqtt:
-    def __init__(self, clientID):
+    def __init__(self):
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
-        self.client = mqtt.Client(client_id=clientID, clean_session=True, userdata=None, transport="tcp")
+        self.client = mqtt.Client(client_id=str(uuid.getnode()), clean_session=True, userdata=None, transport="tcp")
         self.isPending = True
 
         self.sqlite = SQLite(nameDB = routeDatos + '/temporal' )
