@@ -60,7 +60,7 @@ class Estacion(QMainWindow):
         self.thread.start()
 
         #-- Mostrar Ventana---
-        self.show()
+        self.showMaximized()
         self.setFocus()
 
     def restartApp(self):
@@ -142,6 +142,7 @@ class Thread(QThread):
         self.signals = provider.Signals()
 
     def run(self):
+        schedule.every(5).seconds.do(self.data.readAndUpdate)
         schedule.every(int(self.samplingTimes["env"])).seconds.do(self.data.env)
         schedule.every(int(self.samplingTimes["temp1"])).seconds.do(self.data.temp1)
         schedule.every(int(self.samplingTimes["temp2"])).seconds.do(self.data.temp2)

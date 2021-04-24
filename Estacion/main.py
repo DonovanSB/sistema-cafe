@@ -58,7 +58,7 @@ class Estacion(QMainWindow):
         self.thread.start()
 
         #-- Mostrar Ventana---
-        self.show()
+        self.showMaximized()
     def restartApp(self):
         QCoreApplication.quit()
         QProcess.startDetached(sys.executable, sys.argv)
@@ -137,6 +137,8 @@ class Thread(QThread):
         self.signals = provider.Signals()
 
     def run(self):
+        schedule.every(5).seconds.do(self.data.readAndUpdate)
+        schedule.every(int(self.samplingTimes["env"])).seconds.do(self.data.env)
         schedule.every(int(self.samplingTimes["env"])).seconds.do(self.data.env)
         schedule.every(int(self.samplingTimes["irrad"])).seconds.do(self.data.irrad)
         schedule.every(int(self.samplingTimes["speed"])).seconds.do(self.data.windSpeed)

@@ -60,7 +60,7 @@ class Estacion(QMainWindow):
         self.thread.start()
 
         #-- Mostrar Ventana---
-        self.show()
+        self.showMaximized()
         self.setFocus()
     def restartApp(self):
         QCoreApplication.quit()

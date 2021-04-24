@@ -60,7 +60,7 @@ class Data:
         self.textHum5     = textHum5
         self.textHumGrain = textHumGrain
 
-        self.numData      = 1000
+        self.numData      = 8000
 
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         try:
@@ -131,7 +131,8 @@ class Data:
 
     def updateInputValue(self,hum):
         currentTime = datetime.now()
-        self.humGrainService.update(hum, currentTime)
+        self.humGrainService.updateUi(hum, currentTime)
+        self.humGrainService.send(hum, currentTime)
 
     def getData(self, index):
         datos= [self.envService.data[0],
@@ -165,41 +166,63 @@ class Data:
                      self.humGrainService.time]
         return timesList[index]
 
-    def env(self):
+    def readAndUpdate(self):
+        self.env(False)
+        self.env1(False)
+        self.env2(False)
+        self.env3(False)
+        self.env4(False)
+        self.env5(False)
+        # Actualizar grafica
+        self.signals.signalUpdateGraph.emit()
+
+    def env(self, send = True):
         temperatureEnv = random.randint(18, 25)
         humidityEnv = random.randint(50, 60)
         currentTime = datetime.now()
-        self.envService.update([temperatureEnv, humidityEnv], currentTime)
+        self.envService.updateUi([temperatureEnv, humidityEnv], currentTime)
+        if send:
+            self.envService.send([temperatureEnv, humidityEnv], currentTime)
 
-    def env1(self):
+    def env1(self, send = True):
         temperature1 = random.randint(18, 25)
         humidity1 = random.randint(50, 60)
         currentTime = datetime.now()
-        self.env1Service.update([temperature1, humidity1], currentTime)
+        self.env1Service.updateUi([temperature1, humidity1], currentTime)
+        if send:
+            self.env1Service.send([temperature1, humidity1], currentTime)
 
-    def env2(self):
+    def env2(self, send = True):
         temperature2 = random.randint(18, 25)
         humidity2 = random.randint(50, 60)
         currentTime = datetime.now()
-        self.env2Service.update([temperature2, humidity2], currentTime)
+        self.env2Service.updateUi([temperature2, humidity2], currentTime)
+        if send:
+            self.env2Service.send([temperature2, humidity2], currentTime)
 
-    def env3(self):
+    def env3(self, send = True):
         temperature3 = random.randint(18, 25)
         humidity3 = random.randint(50, 60)
         currentTime = datetime.now()
-        self.env3Service.update([temperature3, humidity3], currentTime)
+        self.env3Service.updateUi([temperature3, humidity3], currentTime)
+        if send:
+            self.env3Service.send([temperature3, humidity3], currentTime)
 
-    def env4(self):
+    def env4(self, send = True):
         temperature4 = random.randint(18, 25)
         humidity4 = random.randint(50, 60)
         currentTime = datetime.now()
-        self.env4Service.update([temperature4, humidity4], currentTime)
+        self.env4Service.updateUi([temperature4, humidity4], currentTime)
+        if send:
+            self.env4Service.send([temperature4, humidity4], currentTime)
 
-    def env5(self):
+    def env5(self, send = True):
         temperature5 = random.randint(18, 25)
         humidity5 = random.randint(50, 60)
         currentTime = datetime.now()
-        self.env5Service.update([temperature5, humidity5], currentTime)
+        self.env5Service.updateUi([temperature5, humidity5], currentTime)
+        if send:
+            self.env5Service.send([temperature5, humidity5], currentTime)
 
 class DataService:
     def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
@@ -221,8 +244,21 @@ class DataService:
             self.data = []
         self.time = []
 
-    def update(self, data, timeData):
+    def send(self, data, timeData):
         timeString = timeData.strftime("%Y-%m-%d %H:%M:%S")
+        if self.numVarSensor > 1:
+            for i in range(self.numVarSensor):
+                # Enviar datos al servidor
+                self.client.publish(self.name[i],data[i],timeData)
+            datos = [timeString]
+            datos.extend(data)
+            self.sqlite.insert(datos, names = self.namesDB)
+        else:
+            # Enviar datos al servidor
+            self.client.publish(self.name, data, timeData)
+            self.sqlite.insert((timeString, data), names = self.namesDB)
+
+    def updateUi(self, data, timeData):
         self.time.append(timeData)
         if len(self.time) > self.numData:
             self.time.pop(0)
@@ -233,21 +269,11 @@ class DataService:
                 if len(self.data[i]) > self.numData:
                     self.data[i].pop(0)
                 self.text[i].setText( str(data[i]) +" "+ self.units[i])
-                # Enviar datos al servidor
-                self.client.publish(self.name[i],data[i],timeData)
-            datos = [timeString]
-            datos.extend(data)
-            self.sqlite.insert(datos, names = self.namesDB)
         else:
             self.data.append(data)
             if len(self.data) > self.numData:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
-            # Enviar datos al servidor
-            self.client.publish(self.name, data, timeData)
-            self.sqlite.insert((timeString, data), names = self.namesDB)
-        # Actualizar grafica
-        self.signals.signalUpdateGraph.emit()
 
 @singleton
 class Mqtt:

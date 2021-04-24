@@ -151,6 +151,8 @@ class Data:
         self.env1(False)
         self.env2(False)
         self.env3(False)
+        # Actualizar grafica
+        self.signals.signalUpdateGraph.emit()
 
     def env(self, send = True):
         temperatureEnv = random.randint(18, 25)
@@ -234,8 +236,6 @@ class DataService:
             if len(self.data) > self.numData:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
-        # Actualizar grafica
-        self.signals.signalUpdateGraph.emit()
 
 @singleton
 class Mqtt:

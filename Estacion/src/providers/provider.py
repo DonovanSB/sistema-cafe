@@ -38,7 +38,7 @@ class Data:
         self.textDir = textDir
         self.textRain = textRain
 
-        self.numData = 1000
+        self.numData = 8000
 
         self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
         try:
@@ -111,32 +111,51 @@ class Data:
         timeData = [self.envService.time, self.envService.time, self.irradService.time, self.speedService.time, self.directionService.time, self.rainService.time]
         return timeData[index]
 
-    def env(self):
+    def readAndUpdate(self):
+        self.env(False)
+        self.irrad(False)
+        self.windSpeed(False)
+        self.windDirection(False)
+        self.rain(False)
+        # Actualizar grafica
+        self.signals.signalUpdateGraph.emit()
+
+    def env(self, send = True):
         # Leer datos
         temperatureR = random.randint(18, 25)
         humidityR = random.randint(50, 60)
         currentTime = datetime.now()
-        self.envService.update([temperatureR, humidityR], currentTime)
+        self.envService.updateUi([temperatureR, humidityR], currentTime)
+        if send:
+            self.envService.send([temperatureR, humidityR], currentTime)
 
-    def irrad(self):
+    def irrad(self, send = True):
         irradiance = random.randint(200, 300)
         currentTime = datetime.now()
-        self.irradService.update(irradiance, currentTime)
+        self.irradService.updateUi(irradiance, currentTime)
+        if send:
+            self.irradService.send(irradiance, currentTime)
 
-    def windSpeed(self):
+    def windSpeed(self, send = True):
         speed = random.randint(5, 10)
         currentTime = datetime.now()
-        self.speedService.update(speed, currentTime)
+        self.speedService.updateUi(speed, currentTime)
+        if send:
+            self.speedService.send(speed, currentTime)
 
-    def windDirection(self):
+    def windDirection(self, send = True):
         direction = random.randint(0, 360)
         currentTime = datetime.now()
-        self.directionService.update(direction, currentTime)
+        self.directionService.updateUi(direction, currentTime)
+        if send:
+            self.directionService.send(direction, currentTime)
 
-    def rain(self):
+    def rain(self, send = True):
         rain = random.randint(0, 5)
         currentTime = datetime.now()
-        self.rainService.update(rain, currentTime)
+        self.rainService.updateUi(rain, currentTime)
+        if send:
+            self.rainService.send(rain, currentTime)
 
 class DataService:
     def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
@@ -158,8 +177,21 @@ class DataService:
             self.data = []
         self.time = []
 
-    def update(self, data, timeData):
+    def send(self, data, timeData):
         timeString = timeData.strftime("%Y-%m-%d %H:%M:%S")
+        if self.numVarSensor > 1:
+            for i in range(self.numVarSensor):
+                # Enviar datos al servidor
+                self.client.publish(self.name[i],data[i],timeData)
+            datos = [timeString]
+            datos.extend(data)
+            self.sqlite.insert(datos, names = self.namesDB)
+        else:
+            # Enviar datos al servidor
+            self.client.publish(self.name, data, timeData)
+            self.sqlite.insert((timeString, data), names = self.namesDB)
+
+    def updateUi(self, data, timeData):
         self.time.append(timeData)
         if len(self.time) > self.numData:
             self.time.pop(0)
@@ -170,21 +202,11 @@ class DataService:
                 if len(self.data[i]) > self.numData:
                     self.data[i].pop(0)
                 self.text[i].setText( str(data[i]) +" "+ self.units[i])
-                # Enviar datos al servidor
-                self.client.publish(self.name[i],data[i],timeData)
-            datos = [timeString]
-            datos.extend(data)
-            self.sqlite.insert(datos, names = self.namesDB)
         else:
             self.data.append(data)
             if len(self.data) > self.numData:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
-            # Enviar datos al servidor
-            self.client.publish(self.name, data, timeData)
-            self.sqlite.insert((timeString, data), names = self.namesDB)
-        # Actualizar grafica
-        self.signals.signalUpdateGraph.emit()
 
 @singleton
 class Mqtt:
