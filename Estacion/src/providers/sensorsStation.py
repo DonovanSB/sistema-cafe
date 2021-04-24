@@ -1,3 +1,4 @@
+import time
 # =====================================
 # Configuracion ADC
 # =====================================
@@ -125,6 +126,11 @@ def convertRange(x, in_min, in_max, out_min, out_max):
 def readAM2301(pin):
 	try:
 		humidity, temperature = Adafruit_DHT.read(dht, pin)
+		attempts = 0
+		while temperature == None and attempts < 3:
+			humidity, temperature = Adafruit_DHT.read(dht, pin)
+			attempts = attempts+1
+			time.sleep(0.1)
 		if temperature == None:
 			print("DHT no conectado")
 			return 0, 0
