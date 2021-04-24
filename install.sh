@@ -34,4 +34,4 @@ cd Adafruit_Python_ADS1x15
 sudo python3 setup.py install
 
 cd ~/Development/sistema-cafe
-git checkout hardware
+git checkout rpi
