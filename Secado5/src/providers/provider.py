@@ -9,6 +9,7 @@ from datetime import datetime
 import matplotlib.dates as dates
 from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
 import paho.mqtt.client as mqtt
+import sensorsDatalogger
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,6 +20,14 @@ routeDatos = root + '/datos'
 logging.basicConfig(filename = root + '/secado.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 qmutex = QMutex()
+
+# Sensores
+dht = sensorsDatalogger.DHTConnector('DHT', 'AM2301')
+dht1 = sensorsDatalogger.DHTConnector('DHT1', 'AM2301')
+dht2 = sensorsDatalogger.DHTConnector('DHT2', 'AM2301')
+dht3 = sensorsDatalogger.DHTConnector('DHT3', 'AM2301')
+dht4 = sensorsDatalogger.DHTConnector('DHT4', 'AM2301')
+dhtd = sensorsDatalogger.DHTConnector('DIGITAL', 'AM2301')
 
 def singleton(cls):
     instance = [None]
@@ -177,48 +186,54 @@ class Data:
         self.signals.signalUpdateGraph.emit()
 
     def env(self, send = True):
-        temperatureEnv = random.randint(18, 25)
-        humidityEnv = random.randint(50, 60)
+        humidity, temperature = dht.getHumidityAndTemperature()
+        humidityEnv = round(humidity,1)
+        temperatureEnv = round(temperature,1)
         currentTime = datetime.now()
         self.envService.updateUi([temperatureEnv, humidityEnv], currentTime)
         if send:
             self.envService.send([temperatureEnv, humidityEnv], currentTime)
 
     def env1(self, send = True):
-        temperature1 = random.randint(18, 25)
-        humidity1 = random.randint(50, 60)
+        humidity, temperature = dht1.getHumidityAndTemperature()
+        humidity1 = round(humidity,1)
+        temperature1 = round(temperature,1)
         currentTime = datetime.now()
         self.env1Service.updateUi([temperature1, humidity1], currentTime)
         if send:
             self.env1Service.send([temperature1, humidity1], currentTime)
 
     def env2(self, send = True):
-        temperature2 = random.randint(18, 25)
-        humidity2 = random.randint(50, 60)
+        humidity, temperature = dht2.getHumidityAndTemperature()
+        humidity2 = round(humidity,1)
+        temperature2 = round(temperature,1)
         currentTime = datetime.now()
         self.env2Service.updateUi([temperature2, humidity2], currentTime)
         if send:
             self.env2Service.send([temperature2, humidity2], currentTime)
 
     def env3(self, send = True):
-        temperature3 = random.randint(18, 25)
-        humidity3 = random.randint(50, 60)
+        humidity, temperature = dht3.getHumidityAndTemperature()
+        humidity3 = round(humidity,1)
+        temperature3 = round(temperature,1)
         currentTime = datetime.now()
         self.env3Service.updateUi([temperature3, humidity3], currentTime)
         if send:
             self.env3Service.send([temperature3, humidity3], currentTime)
 
     def env4(self, send = True):
-        temperature4 = random.randint(18, 25)
-        humidity4 = random.randint(50, 60)
+        humidity, temperature = dht4.getHumidityAndTemperature()
+        humidity4 = round(humidity,1)
+        temperature4 = round(temperature,1)
         currentTime = datetime.now()
         self.env4Service.updateUi([temperature4, humidity4], currentTime)
         if send:
             self.env4Service.send([temperature4, humidity4], currentTime)
 
     def env5(self, send = True):
-        temperature5 = random.randint(18, 25)
-        humidity5 = random.randint(50, 60)
+        humidity, temperature = dhtd.getHumidityAndTemperature()
+        humidity5 = round(humidity,1)
+        temperature5 = round(temperature,1)
         currentTime = datetime.now()
         self.env5Service.updateUi([temperature5, humidity5], currentTime)
         if send:

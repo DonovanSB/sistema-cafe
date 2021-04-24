@@ -9,6 +9,7 @@ from datetime import datetime
 import matplotlib.dates as dates
 from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
 import paho.mqtt.client as mqtt
+import sensorsDatalogger
 
 rutaPrefsUser = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,6 +20,12 @@ routeDatos = root + '/datos'
 logging.basicConfig(filename = root + '/fermentacion.log', format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 qmutex = QMutex()
+# Sensores
+dht1 = sensorsDatalogger.DHTConnector('DHT', 'AM2301')
+temp1 = sensorsDatalogger.DHTConnector('DHT1', 'DS18B20', '1')
+temp2 = sensorsDatalogger.DHTConnector('DHT1', 'DS18B20', '2')
+temp3 = sensorsDatalogger.DHTConnector('DHT1', 'DS18B20', '3')
+temp4 = sensorsDatalogger.DHTConnector('DHT1', 'DS18B20', '4')
 
 def singleton(cls):
     instance = [None]
@@ -158,8 +165,9 @@ class Data:
 
     def env(self, send = True):
         # Leer datos
-        temperatureR = random.randint(18, 25)
-        humidityR = random.randint(50, 60)
+        humidity, temperature = dht1.getHumidityAndTemperature()
+        humidityR = round(humidity,1)
+        temperatureR = round(temperature,1)
         currentTime = datetime.now()
         self.envService.updateUi([temperatureR, humidityR], currentTime)
         if send:
@@ -167,7 +175,7 @@ class Data:
 
     def temp1(self, send = True):
         # Leer Datos
-        temperature = random.randint(18, 25)
+        temperature = round(temp1.getTemperature(),1)
         currentTime = datetime.now()
         self.temp1Service.updateUi(temperature, currentTime)
         if send:
@@ -175,7 +183,7 @@ class Data:
 
     def temp2(self, send = True):
         # Leer Datos
-        temperature = random.randint(18, 25)
+        temperature = round(temp2.getTemperature(),1)
         currentTime = datetime.now()
         self.temp2Service.updateUi(temperature, currentTime)
         if send:
@@ -183,7 +191,7 @@ class Data:
 
     def temp3(self, send = True):
         # Leer Datos
-        temperature = random.randint(18, 25)
+        temperature = round(temp3.getTemperature(),1)
         currentTime = datetime.now()
         self.temp3Service.updateUi(temperature, currentTime)
         if send:
@@ -191,7 +199,7 @@ class Data:
 
     def temp4(self, send = True):
         # Leer Datos
-        temperature = random.randint(18, 25)
+        temperature = round(temp4.getTemperature(),1)
         currentTime = datetime.now()
         self.temp4Service.updateUi(temperature, currentTime)
         if send:
