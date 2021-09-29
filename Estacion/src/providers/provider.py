@@ -131,9 +131,10 @@ class Data:
         humidityR = round(humidity,1)
         temperatureR = round(temperature,1)
         currentTime = datetime.now()
-        self.envService.updateUi([temperatureR, humidityR], currentTime)
-        if send:
-            self.envService.send([temperatureR, humidityR], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.envService.updateUi([temperatureR, humidityR], currentTime)
+            if send:
+                self.envService.send([temperatureR, humidityR], currentTime)
 
     def irrad(self, send = True):
         irradiance = round(estacion.getRadiation(),1)

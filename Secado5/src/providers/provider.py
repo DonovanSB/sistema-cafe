@@ -191,54 +191,60 @@ class Data:
         humidityEnv = round(humidity,1)
         temperatureEnv = round(temperature,1)
         currentTime = datetime.now()
-        self.envService.updateUi([temperatureEnv, humidityEnv], currentTime)
-        if send:
-            self.envService.send([temperatureEnv, humidityEnv], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.envService.updateUi([temperatureEnv, humidityEnv], currentTime)
+            if send:
+                self.envService.send([temperatureEnv, humidityEnv], currentTime)
 
     def env1(self, send = True):
         humidity, temperature = dht1.getHumidityAndTemperature()
         humidity1 = round(humidity,1)
         temperature1 = round(temperature,1)
         currentTime = datetime.now()
-        self.env1Service.updateUi([temperature1, humidity1], currentTime)
-        if send:
-            self.env1Service.send([temperature1, humidity1], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.env1Service.updateUi([temperature1, humidity1], currentTime)
+            if send:
+                self.env1Service.send([temperature1, humidity1], currentTime)
 
     def env2(self, send = True):
         humidity, temperature = dht2.getHumidityAndTemperature()
         humidity2 = round(humidity,1)
         temperature2 = round(temperature,1)
         currentTime = datetime.now()
-        self.env2Service.updateUi([temperature2, humidity2], currentTime)
-        if send:
-            self.env2Service.send([temperature2, humidity2], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.env2Service.updateUi([temperature2, humidity2], currentTime)
+            if send:
+                self.env2Service.send([temperature2, humidity2], currentTime)
 
     def env3(self, send = True):
         humidity, temperature = dht3.getHumidityAndTemperature()
         humidity3 = round(humidity,1)
         temperature3 = round(temperature,1)
         currentTime = datetime.now()
-        self.env3Service.updateUi([temperature3, humidity3], currentTime)
-        if send:
-            self.env3Service.send([temperature3, humidity3], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.env3Service.updateUi([temperature3, humidity3], currentTime)
+            if send:
+                self.env3Service.send([temperature3, humidity3], currentTime)
 
     def env4(self, send = True):
         humidity, temperature = dht4.getHumidityAndTemperature()
         humidity4 = round(humidity,1)
         temperature4 = round(temperature,1)
         currentTime = datetime.now()
-        self.env4Service.updateUi([temperature4, humidity4], currentTime)
-        if send:
-            self.env4Service.send([temperature4, humidity4], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.env4Service.updateUi([temperature4, humidity4], currentTime)
+            if send:
+                self.env4Service.send([temperature4, humidity4], currentTime)
 
     def env5(self, send = True):
         humidity, temperature = dhtd.getHumidityAndTemperature()
         humidity5 = round(humidity,1)
         temperature5 = round(temperature,1)
         currentTime = datetime.now()
-        self.env5Service.updateUi([temperature5, humidity5], currentTime)
-        if send:
-            self.env5Service.send([temperature5, humidity5], currentTime)
+        if (humidity != 0 and temperature !=0):
+            self.env5Service.updateUi([temperature5, humidity5], currentTime)
+            if send:
+                self.env5Service.send([temperature5, humidity5], currentTime)
 
 class DataService:
     def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):

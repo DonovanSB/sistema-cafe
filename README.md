@@ -86,3 +86,14 @@ StartupNotify=true
 ```
 sudo nano /usr/share/applications/nombre.desktop
 ```
+
+## Configuración Fermentación
+Agregar un archivo .json en la ruta sistema-cafe->Fermentacion->src->providers con los ids de los sensores de temperatura encapsulados ds18b20, con la siguiente estructura y con el nombre devices.json
+```
+{
+    "sensor1": "/sys/bus/w1/devices/28-01191f16007e/w1_slave",
+    "sensor2": "/sys/bus/w1/devices/28-0119126fe5aa/w1_slave",
+    "sensor3": "/sys/bus/w1/devices/28-01191254f3e8/w1_slave",
+    "sensor4": "/sys/bus/w1/devices/28-0119125c8982/w1_slave"
+}
+```
