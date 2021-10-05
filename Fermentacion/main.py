@@ -87,7 +87,7 @@ class Estacion(QMainWindow):
     def centerWindow(self):
         sizeScreen = QDesktopWidget().availableGeometry().center()
         sizeWindow = self.geometry()
-        self.move(sizeScreen.x()-sizeWindow.width()/2,sizeScreen.y() - sizeWindow.height()/2)
+        self.move(sizeScreen.x()-int(sizeWindow.width()/2),sizeScreen.y() - int(sizeWindow.height()/2))
 
     def createWidgets(self):
         # Datos Actuales
