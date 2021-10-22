@@ -118,13 +118,57 @@ class Storage(QWidget):
         else:
             self.routeData.setPlaceholderText("/home/pi/data")
 
+        # Limites de almacenamiento
+        self.storageLimits = StorageLimits(self.preferences)
+
         vboxStorage = QVBoxLayout()
         vboxStorage.setAlignment(Qt.AlignTop)
         vboxStorage.addWidget(labelRoute)
         vboxStorage.addWidget(self.routeData)
         groupboxStorage.setLayout(vboxStorage)
         vbox = QVBoxLayout()
+        vbox.setAlignment(Qt.AlignTop)
         vbox.addWidget(groupboxStorage)
+        vbox.addWidget(self.storageLimits)
+        self.setLayout(vbox)
+
+class StorageLimits(QWidget):
+    def __init__(self, prefs):
+        super().__init__()
+        self.preferences = prefs
+        # Tiempos de muestreo
+        groupboxTS = QGroupBox("Límites de almacenamiento (días)")
+
+        self.namesSensors = ["Datos principales", "Datos temporales"]
+        self.savedNames = ["mainData","tempData"]
+        numSensors = len(self.namesSensors)
+        labelsSensors = []
+        for name in self.namesSensors:
+            label = QLabel(name)
+            label.setMaximumWidth(150)
+            labelsSensors.append(label)
+        self.inputsSensors = []
+        for i in range(numSensors):
+            lineEdit = QLineEdit()
+            lineEdit.setMaximumWidth(200)
+            self.inputsSensors.append(lineEdit)
+
+        try:
+            if self.preferences["storageLimits"]:
+                storageLimits = self.preferences["storageLimits"]
+                for i in range(numSensors):
+                    self.inputsSensors[i].setText(str(storageLimits[self.savedNames[i]]))
+        except:
+            print('No se encontraron limites de días de almacenamiento en las preferencias del usuario')
+
+        gridTS = QGridLayout()
+        gridTS.setAlignment(Qt.AlignTop)
+        for i in range(numSensors):
+            gridTS.addWidget(labelsSensors[i],i,0)
+            gridTS.addWidget(self.inputsSensors[i],i,1)
+        groupboxTS.setLayout(gridTS)
+        vbox = QVBoxLayout()
+        vbox.addWidget(groupboxTS)
         self.setLayout(vbox)
 
 class SamplingTime(QWidget):
@@ -243,7 +287,12 @@ class Preferencias(QDialog):
                     "password": self.conexion.password.text(),
                     "topics":topics,
                     "routeData":self.storage.routeData.text(),
-                    "samplingTimes": samplingTimes}
+                    "samplingTimes": samplingTimes,
+                    "storageLimits": {
+                        "mainData": int(self.storage.storageLimits.inputsSensors[0].text()),
+                        "tempData": int(self.storage.storageLimits.inputsSensors[1].text())
+                    }
+                    }
         self.prefs.update(dataJson)
         self.close()
         reply = QMessageBox.question(None,' ',"Los cambios harán efecto después de reiniciar la aplicación ¿Desea reiniciar la aplicación ahora?",

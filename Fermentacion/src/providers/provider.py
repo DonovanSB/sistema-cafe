@@ -8,7 +8,7 @@ from sqlite3 import Error
 from datetime import datetime
 import uuid
 import matplotlib.dates as dates
-from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex
+from PyQt5.QtCore import pyqtSignal, QObject, QThread, QMutex, QDateTime
 import paho.mqtt.client as mqtt
 import sensorsDatalogger
 
@@ -209,6 +209,8 @@ class Data:
 
 class DataService:
     def __init__(self, sqlite, nameTable, namesDB, name, text, numData, units,numVarSensor = 1):
+        self.prefs = LocalStorage(route=rutaPrefsUser, name = 'prefs')
+        self.table = nameTable
         self.sqlite = sqlite
         self.namesDB = nameTable + namesDB
         self.name = name
@@ -227,6 +229,15 @@ class DataService:
             self.data = []
         self.time = []
 
+        self.prefsMap = self.prefs.read()
+        if self.prefsMap:
+            if self.prefsMap.__contains__("storageLimits"):
+                self.dataLimit = self.prefsMap["storageLimits"]["mainData"]
+            else:
+                self.dataLimit = 60
+        else:
+            self.dataLimit = 60
+
     def send(self, data, timeData):
         timeString = timeData.strftime("%Y-%m-%d %H:%M:%S")
         if self.numVarSensor > 1:
@@ -240,6 +251,7 @@ class DataService:
             # Enviar datos al servidor
             self.client.publish(self.name, data, timeData)
             self.sqlite.insert((timeString, data), names = self.namesDB)
+        self.checkLimitDB(self.table, self.dataLimit)
 
     def updateUi(self, data, timeData):
         self.time.append(timeData)
@@ -258,6 +270,13 @@ class DataService:
                 self.data.pop(0)
             self.text.setText( str(data) +" "+ self.units)
 
+    def checkLimitDB(self, table, limit):
+        firstRow = self.sqlite.findFirst(table)
+        if firstRow:
+            dateAdded = QDateTime.fromString(firstRow[0][0], 'yyyy-MM-dd hh:mm:ss').addDays(limit)
+            if QDateTime.currentDateTime() >= dateAdded:
+                self.sqlite.removeByDate(table, limit)
+
 @singleton
 class Mqtt:
     def __init__(self):
@@ -272,32 +291,42 @@ class Mqtt:
         self.sqlite.createTable(nameTable = self.nameTable, fields = fields)
 
         self.signals = Signals()
+
+        self.prefsMap = self.prefs.read()
         try:
-            self.brokerAddress = self.prefs.read()['server']
+            self.brokerAddress = self.prefsMap['server']
         except:
             logging.error('No se encontró server en prefs.json')
             self.brokerAddress = '192.168.1.5'
         try:
-            self.port = self.prefs.read()['port']
+            self.port = self.prefsMap['port']
         except:
             logging.error('No se encontró puerto en prefs.json')
             self.port = 1883
         try:
-            self.user = self.prefs.read()['user']
+            self.user = self.prefsMap['user']
         except:
             logging.error('No se encontró usuario mqqt en prefs.json')
             self.user = 'user'
         try:
-            self.password = self.prefs.read()['password']
+            self.password = self.prefsMap['password']
         except:
             logging.error('No se encontró contraseña mqqt en prefs.json')
             self.password = '12345'
         try:
-            self.topics = self.prefs.read()["topics"]
+            self.topics = self.prefsMap["topics"]
         except:
             logging.error("Topics no encontrados")
             self.topics = {"tempEnv":"topic1", "humEnv":"topic2", "temp1":"topic3", "temp2":"topic4",
                            "temp3":"topic5", "temp4":"topic6", "brix":"topic7", "ph":"topic8"}
+
+        if self.prefsMap:
+            if self.prefsMap.__contains__("storageLimits"):
+                self.tempDataLimit = self.prefsMap["storageLimits"]["tempData"]
+            else:
+                self.tempDataLimit = 30
+        else: 
+            self.tempDataLimit = 30
 
         self.client.on_connect = self.onConnect
         self.client.on_disconnect = self.onDisconnect
@@ -339,6 +368,7 @@ class Mqtt:
             # logging.error('No se pudo publicar los datos en el servidor')
             self.sqlite.insert((name, data, timestamp), names = self.names)
             self.isPending = True
+            self.checkLimitDB(self.tempDataLimit)
 
     def verifyPending(self):
         if self.isPending and self.client.is_connected():
@@ -352,6 +382,13 @@ class Mqtt:
                         self.sqlite.removeById(item[0])
             else:
                 self.isPending = False
+
+    def checkLimitDB(self, limit):
+        firstRow = self.sqlite.findFirst('pending')
+        if firstRow:
+            dateAdded = QDateTime.fromMSecsSinceEpoch(firstRow[0][3]*1000).addDays(limit)
+            if QDateTime.currentDateTime() >= dateAdded:
+                self.sqlite.removeByDate('pending', limit)
 
 class SQLite:
     def __init__(self, nameDB):
@@ -392,6 +429,16 @@ class SQLite:
         lista = self.cursor.fetchall()
         qmutex.unlock()
         return lista
+        
+    def removeByDate(self, table, limit):
+        self.cursor.execute('DELETE FROM ' + table + " WHERE time<= date('now', '-%s day')" % str(limit))
+        self.con.commit()
+
+    def findFirst(self, table):
+        self.cursor.execute('SELECT * FROM ' + table + ' LIMIT 1')
+        lista = self.cursor.fetchall()
+        return lista
+
 
 class Plotter:
     def __init__(self,Figure,ax):
