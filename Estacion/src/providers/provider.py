@@ -181,8 +181,11 @@ class DataService:
         self.time = []
 
         self.prefsMap = self.prefs.read()
-        if self.prefsMap.__contains__("storageLimits"):
-            self.dataLimit = self.prefsMap["storageLimits"]["mainData"]
+        if self.prefsMap:
+            if self.prefsMap.__contains__("storageLimits"):
+                self.dataLimit = self.prefsMap["storageLimits"]["mainData"]
+            else:
+                self.dataLimit = 60
         else:
             self.dataLimit = 60
 
@@ -267,8 +270,11 @@ class Mqtt:
             logging.error("Topics no encontrados")
             self.topics = {"tempEnv":"topic1","humEnv":"topic2","irrad":"topic3","speed":"topic4","direction":"topic5","rain":"topic6"}
         
-        if self.prefsMap.__contains__("storageLimits"):
-            self.tempDataLimit = self.prefsMap["storageLimits"]["tempData"]
+        if self.prefsMap:
+            if self.prefsMap.__contains__("storageLimits"):
+                self.tempDataLimit = self.prefsMap["storageLimits"]["tempData"]
+            else:
+                self.tempDataLimit = 30
         else:
             self.tempDataLimit = 30
 

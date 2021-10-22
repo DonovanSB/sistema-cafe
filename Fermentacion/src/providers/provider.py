@@ -221,8 +221,11 @@ class DataService:
         self.time = []
 
         self.prefsMap = self.prefs.read()
-        if self.prefsMap.__contains__("storageLimits"):
-            self.dataLimit = self.prefsMap["storageLimits"]["mainData"]
+        if self.prefsMap:
+            if self.prefsMap.__contains__("storageLimits"):
+                self.dataLimit = self.prefsMap["storageLimits"]["mainData"]
+            else:
+                self.dataLimit = 60
         else:
             self.dataLimit = 60
 
@@ -308,9 +311,12 @@ class Mqtt:
             self.topics = {"tempEnv":"topic1", "humEnv":"topic2", "temp1":"topic3", "temp2":"topic4",
                            "temp3":"topic5", "temp4":"topic6", "brix":"topic7", "ph":"topic8"}
 
-        if self.prefsMap.__contains__("storageLimits"):
-            self.tempDataLimit = self.prefsMap["storageLimits"]["tempData"]
-        else:
+        if self.prefsMap:
+            if self.prefsMap.__contains__("storageLimits"):
+                self.tempDataLimit = self.prefsMap["storageLimits"]["tempData"]
+            else:
+                self.tempDataLimit = 30
+        else: 
             self.tempDataLimit = 30
 
         self.client.on_connect = self.onConnect
