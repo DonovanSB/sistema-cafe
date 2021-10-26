@@ -1,7 +1,22 @@
 import sys
 import os
-from PyQt5.QtWidgets import QScrollArea, QMessageBox, QWidget, QTabWidget, QLineEdit, QFrame, QPushButton, QGroupBox,QLabel, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog
+from PyQt5.QtWidgets import (
+    QScrollArea,
+    QMessageBox,
+    QWidget,
+    QTabWidget,
+    QLineEdit,
+    QFrame,
+    QPushButton,
+    QGroupBox,
+    QLabel,
+    QGridLayout,
+    QVBoxLayout,
+    QHBoxLayout,
+    QDialog,
+)
 from PyQt5.QtCore import Qt
+
 parent = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 route = os.path.abspath(parent)
 sys.path.append(route + "/widgets")
@@ -9,7 +24,8 @@ sys.path.append(route + "/providers")
 import provider
 import widgets
 
-rutaPrefsUser =route + "/providers"
+rutaPrefsUser = route + "/providers"
+
 
 class Conexion(QWidget):
     def __init__(self, prefs):
@@ -27,7 +43,7 @@ class Conexion(QWidget):
             else:
                 self.server.setPlaceholderText("192.68.185.27")
         except:
-            print('No se encontró servidor en las preferencias del usuario')
+            print("No se encontró servidor en las preferencias del usuario")
         labelPort = QLabel("Puerto")
         labelPort.setMaximumWidth(150)
         self.port = QLineEdit()
@@ -36,7 +52,7 @@ class Conexion(QWidget):
             if self.preferences:
                 self.port.setText(str(self.preferences["port"]))
         except:
-            print('No se encontró puerto en las preferencias del usuario')
+            print("No se encontró puerto en las preferencias del usuario")
         labelUser = QLabel("Usuario")
         labelUser.setMaximumWidth(150)
         self.user = QLineEdit()
@@ -45,7 +61,7 @@ class Conexion(QWidget):
             if self.preferences:
                 self.user.setText(self.preferences["user"])
         except:
-            print('No se encontró usuario mqtt en las preferencias del usuario')
+            print("No se encontró usuario mqtt en las preferencias del usuario")
 
         labelPassword = QLabel("Contraseña")
         labelPassword.setMaximumWidth(150)
@@ -56,12 +72,32 @@ class Conexion(QWidget):
             if self.preferences:
                 self.password.setText(self.preferences["password"])
         except:
-            print('No se encontró contraseña mqtt en las preferencias del usuario')
+            print("No se encontró contraseña mqtt en las preferencias del usuario")
 
         groupboxTopics = QGroupBox("Topics")
 
-        self.namesSensors = ["Hum Ambiente", "Temp Ambiente", "Hum Zona 1","Temp Zona 1", "Hum Zona 2","Temp Zona 2", "Hum Zona 3","Temp Zona 3", "Humedad Grano"]
-        self.savedNames = ["humEnv","tempEnv","hum1","temp1","hum2","temp2","hum3","temp3","humGrano"]
+        self.namesSensors = [
+            "Hum Ambiente",
+            "Temp Ambiente",
+            "Hum Zona 1",
+            "Temp Zona 1",
+            "Hum Zona 2",
+            "Temp Zona 2",
+            "Hum Zona 3",
+            "Temp Zona 3",
+            "Humedad Grano",
+        ]
+        self.savedNames = [
+            "humEnv",
+            "tempEnv",
+            "hum1",
+            "temp1",
+            "hum2",
+            "temp2",
+            "hum3",
+            "temp3",
+            "humGrano",
+        ]
         numSensors = len(self.namesSensors)
         labelsSensors = []
         for name in self.namesSensors:
@@ -80,35 +116,36 @@ class Conexion(QWidget):
                 for i in range(numSensors):
                     self.inputsSensors[i].setText(topics[self.savedNames[i]])
         except:
-            print('No se encontraron topics en las preferencias del usuario')
+            print("No se encontraron topics en las preferencias del usuario")
 
         grid = QGridLayout(groupboxTopics)
         grid.setAlignment(Qt.AlignTop)
         for i in range(numSensors):
-            grid.addWidget(labelsSensors[i],i,0)
-            grid.addWidget(self.inputsSensors[i],i,1)
+            grid.addWidget(labelsSensors[i], i, 0)
+            grid.addWidget(self.inputsSensors[i], i, 1)
 
         gridConexion = QGridLayout(groupboxConexion)
         gridConexion.setAlignment(Qt.AlignTop)
-        gridConexion.addWidget(labelServer,0,0)
-        gridConexion.addWidget(self.server,0,1)
-        gridConexion.addWidget(labelPort,0,2)
-        gridConexion.addWidget(self.port,0,3)
-        gridConexion.addWidget(labelUser,1,0)
-        gridConexion.addWidget(self.user,1,1)
-        gridConexion.addWidget(labelPassword,1,2)
-        gridConexion.addWidget(self.password,1,3)
-        gridConexion.addWidget(groupboxTopics,2,0,1,4)
+        gridConexion.addWidget(labelServer, 0, 0)
+        gridConexion.addWidget(self.server, 0, 1)
+        gridConexion.addWidget(labelPort, 0, 2)
+        gridConexion.addWidget(self.port, 0, 3)
+        gridConexion.addWidget(labelUser, 1, 0)
+        gridConexion.addWidget(self.user, 1, 1)
+        gridConexion.addWidget(labelPassword, 1, 2)
+        gridConexion.addWidget(self.password, 1, 3)
+        gridConexion.addWidget(groupboxTopics, 2, 0, 1, 4)
 
         vbox = QVBoxLayout()
         vbox.addWidget(groupboxConexion)
         self.setLayout(vbox)
 
+
 class Storage(QWidget):
     def __init__(self, prefs):
         super().__init__()
         self.preferences = prefs
-        #---Storage---
+        # ---Storage---
         groupboxStorage = QGroupBox("Opciones de almacenamiento ")
 
         labelRoute = QLabel("Ingresar ruta de almacenamiento:")
@@ -132,6 +169,7 @@ class Storage(QWidget):
         vbox.addWidget(self.storageLimits)
         self.setLayout(vbox)
 
+
 class StorageLimits(QWidget):
     def __init__(self, prefs):
         super().__init__()
@@ -140,7 +178,7 @@ class StorageLimits(QWidget):
         groupboxTS = QGroupBox("Límites de almacenamiento (días)")
 
         self.namesSensors = ["Datos principales", "Datos temporales"]
-        self.savedNames = ["mainData","tempData"]
+        self.savedNames = ["mainData", "tempData"]
         numSensors = len(self.namesSensors)
         labelsSensors = []
         for name in self.namesSensors:
@@ -157,19 +195,24 @@ class StorageLimits(QWidget):
             if self.preferences["storageLimits"]:
                 storageLimits = self.preferences["storageLimits"]
                 for i in range(numSensors):
-                    self.inputsSensors[i].setText(str(storageLimits[self.savedNames[i]]))
+                    self.inputsSensors[i].setText(
+                        str(storageLimits[self.savedNames[i]])
+                    )
         except:
-            print('No se encontraron limites de días de almacenamiento en las preferencias del usuario')
+            print(
+                "No se encontraron limites de días de almacenamiento en las preferencias del usuario"
+            )
 
         gridTS = QGridLayout()
         gridTS.setAlignment(Qt.AlignTop)
         for i in range(numSensors):
-            gridTS.addWidget(labelsSensors[i],i,0)
-            gridTS.addWidget(self.inputsSensors[i],i,1)
+            gridTS.addWidget(labelsSensors[i], i, 0)
+            gridTS.addWidget(self.inputsSensors[i], i, 1)
         groupboxTS.setLayout(gridTS)
         vbox = QVBoxLayout()
         vbox.addWidget(groupboxTS)
         self.setLayout(vbox)
+
 
 class SamplingTime(QWidget):
     def __init__(self, prefs):
@@ -179,7 +222,7 @@ class SamplingTime(QWidget):
         groupboxTS = QGroupBox("Tiempos de muestreo (segundos)")
 
         self.namesSensors = ["Ambiente", "Zona 1", "Zona 2", "Zona 3"]
-        self.savedNames = ["env","env1","env2","env3"]
+        self.savedNames = ["env", "env1", "env2", "env3"]
         numSensors = len(self.namesSensors)
         labelsSensors = []
         for name in self.namesSensors:
@@ -198,17 +241,20 @@ class SamplingTime(QWidget):
                 for i in range(numSensors):
                     self.inputsSensors[i].setText(samplingTimes[self.savedNames[i]])
         except:
-            print('No se encontraron tiempos de muestreo en las preferencias del usuario')
+            print(
+                "No se encontraron tiempos de muestreo en las preferencias del usuario"
+            )
 
         gridTS = QGridLayout()
         gridTS.setAlignment(Qt.AlignTop)
         for i in range(numSensors):
-            gridTS.addWidget(labelsSensors[i],i,0)
-            gridTS.addWidget(self.inputsSensors[i],i,1)
+            gridTS.addWidget(labelsSensors[i], i, 0)
+            gridTS.addWidget(self.inputsSensors[i], i, 1)
         groupboxTS.setLayout(gridTS)
         vbox = QVBoxLayout()
         vbox.addWidget(groupboxTS)
         self.setLayout(vbox)
+
 
 class Preferencias(QDialog):
     def __init__(self):
@@ -216,11 +262,15 @@ class Preferencias(QDialog):
         self.setWindowTitle("Preferencias")
         self.setMinimumWidth(400)
 
-        #Estilos
-        self.styleButtons = "QPushButton {background-color:#0d47a1; color: white; border-radius: 5px;font: 15px bold; margin: 0px 5px 0px 0px ; padding: 5px 10px 5px 10px;}" "QPushButton:hover { background-color: #5472d3}" "QPushButton:pressed { background-color: #002171}"
+        # Estilos
+        self.styleButtons = (
+            "QPushButton {background-color:#0d47a1; color: white; border-radius: 5px;font: 15px bold; margin: 0px 5px 0px 0px ; padding: 5px 10px 5px 10px;}"
+            "QPushButton:hover { background-color: #5472d3}"
+            "QPushButton:pressed { background-color: #002171}"
+        )
 
-        #providers
-        self.prefs = provider.LocalStorage(route=rutaPrefsUser, name = 'prefs')
+        # providers
+        self.prefs = provider.LocalStorage(route=rutaPrefsUser, name="prefs")
         self.signals = provider.Signals()
 
         self.preferences = []
@@ -252,12 +302,12 @@ class Preferencias(QDialog):
         hboxButtons.addWidget(buttonSave)
         hboxButtons.addWidget(buttonCancel)
 
-        self.tabWidget.addTab(self.conexion, 'Conexión')
-        self.tabWidget.addTab(self.storage, 'Almacenamiento')
-        self.tabWidget.addTab(self.time, 'Tiempos')
+        self.tabWidget.addTab(self.conexion, "Conexión")
+        self.tabWidget.addTab(self.storage, "Almacenamiento")
+        self.tabWidget.addTab(self.time, "Tiempos")
         grid = QGridLayout()
-        grid.addWidget(self.tabWidget,0,0,1,2)
-        grid.addWidget(frameButtons,1,1)
+        grid.addWidget(self.tabWidget, 0, 0, 1, 2)
+        grid.addWidget(frameButtons, 1, 1)
 
         scroll = QScrollArea()
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -268,7 +318,7 @@ class Preferencias(QDialog):
         scroll.setWidget(widget)
         vbox = QVBoxLayout()
         vbox.addWidget(scroll)
-        vbox.setContentsMargins(0,0,0,0)
+        vbox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(vbox)
 
     def closePreferencias(self):
@@ -277,25 +327,35 @@ class Preferencias(QDialog):
     def savePrefs(self):
         samplingTimes = {}
         for i in range(len(self.time.namesSensors)):
-            samplingTimes.update({self.time.savedNames[i]: self.time.inputsSensors[i].text()})
+            samplingTimes.update(
+                {self.time.savedNames[i]: self.time.inputsSensors[i].text()}
+            )
         topics = {}
         for i in range(len(self.conexion.savedNames)):
-            topics.update({self.conexion.savedNames[i]: self.conexion.inputsSensors[i].text()})
-        dataJson = {"server":self.conexion.server.text(),
-                    "port": int(self.conexion.port.text()),
-                    "user": self.conexion.user.text(),
-                    "password": self.conexion.password.text(),
-                    "topics":topics,
-                    "routeData":self.storage.routeData.text(),
-                    "samplingTimes": samplingTimes,
-                    "storageLimits": {
-                        "mainData": int(self.storage.storageLimits.inputsSensors[0].text()),
-                        "tempData": int(self.storage.storageLimits.inputsSensors[1].text())
-                    }
-                    }
+            topics.update(
+                {self.conexion.savedNames[i]: self.conexion.inputsSensors[i].text()}
+            )
+        dataJson = {
+            "server": self.conexion.server.text(),
+            "port": int(self.conexion.port.text()),
+            "user": self.conexion.user.text(),
+            "password": self.conexion.password.text(),
+            "topics": topics,
+            "routeData": self.storage.routeData.text(),
+            "samplingTimes": samplingTimes,
+            "storageLimits": {
+                "mainData": int(self.storage.storageLimits.inputsSensors[0].text()),
+                "tempData": int(self.storage.storageLimits.inputsSensors[1].text()),
+            },
+        }
         self.prefs.update(dataJson)
         self.close()
-        reply = QMessageBox.question(None,' ',"Los cambios harán efecto después de reiniciar la aplicación ¿Desea reiniciar la aplicación ahora?",
-                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(
+            None,
+            " ",
+            "Los cambios harán efecto después de reiniciar la aplicación ¿Desea reiniciar la aplicación ahora?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
         if reply == QMessageBox.Yes:
             self.signals.signalUpdatePrefs.emit()
